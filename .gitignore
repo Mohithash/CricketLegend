@@ -1,0 +1,16 @@
+build/
+app/build/
+.gradle/
+local.properties
+*.log
+.kotlin/
+apkshare/
+CricketLegend-v1.0.apk
+CricketLegend-v2.0.apk
+CricketLegend-v2.1.apk
+CricketLegend-v2.2.apk
+CricketLegend-v2.3.apk
+CricketLegend-v2.4.apk
+CricketLegend-v2.5.apk
+CricketLegend-v2.6.apk
+CricketLegend-v2.7.apk
