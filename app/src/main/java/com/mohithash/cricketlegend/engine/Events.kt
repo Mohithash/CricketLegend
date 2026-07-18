@@ -138,9 +138,8 @@ object Events {
         }
         if (eligible.isNotEmpty() && rng.nextDouble() < 0.7) {
             val brand = eligible.random(rng)
-            val agentTier = (s.staff["agent"] ?: -1) + 1
             val imageMult = 1.0 + (s.publicImage / 100.0)
-            val value = (brand.yearlyValue * (1.0 + agentTier * 0.18) * followerMult * imageMult).toLong()
+            val value = (brand.yearlyValue * Allocations.prDealMult(s) * followerMult * imageMult).toLong()
             val years = 2 + rng.nextInt(2)
             pool.add(GameEvent(
                 "endorse_${brand.name}", "Endorsement Offer: ${brand.name}",

@@ -269,6 +269,41 @@ fun LineChart(values: List<Int>, modifier: Modifier = Modifier, color: Color = G
     }
 }
 
+/** A labelled ₹/week budget slider with a live effect readout. */
+@Composable
+fun BudgetSlider(
+    emoji: String,
+    label: String,
+    blurb: String,
+    value: Long,
+    max: Long,
+    country: String,
+    onChange: (Long) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("$emoji $label", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f))
+            Text(
+                if (value <= 0) "off" else com.mohithash.cricketlegend.engine.Money.fmt(value, country) + "/wk",
+                color = if (value <= 0) TextDim else GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold
+            )
+        }
+        androidx.compose.material3.Slider(
+            value = value.toFloat(),
+            onValueChange = { onChange(it.toLong()) },
+            valueRange = 0f..max.toFloat(),
+            steps = 9,
+            colors = androidx.compose.material3.SliderDefaults.colors(
+                thumbColor = GoldAccent,
+                activeTrackColor = PitchGreen,
+                inactiveTrackColor = TileBg
+            )
+        )
+        Text(blurb, color = TextDim, fontSize = 10.sp)
+    }
+}
+
 /** Achievement/ceremony badge chip. */
 @Composable
 fun AchievementBadge(text: String) {

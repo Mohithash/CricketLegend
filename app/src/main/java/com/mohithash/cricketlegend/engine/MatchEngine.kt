@@ -33,7 +33,12 @@ object MatchEngine {
         val fitnessFactor = 0.75 + (s.fitness / 100.0) * 0.30
         val moraleFactor = 0.90 + (s.morale / 100.0) * 0.15
         val formFactor = 1.0 + s.form * 0.035
-        val oppQuality = if (fx.level == Level.DOMESTIC) 0.95 else 1.0 + (oppStrength(fx) - 80) / 250.0
+        // being under-cooked (low sharpness) hurts you at the crease
+        val sharpFactor = 0.88 + (s.sharpness / 100.0) * 0.12
+        // analytics & match prep (a weekly-budget dial) shaves the opposition's edge
+        val effOppStrength = oppStrength(fx) + Difficulty.oppBump(s) - Allocations.analyticsEdge(s)
+        val oppQuality = if (fx.level == Level.DOMESTIC) 0.95
+            else 1.0 + (effOppStrength - 80) / 250.0
 
         // pitch interacts with technique sub-skills
         val batSkillBase = when (fx.pitch) {
@@ -64,10 +69,10 @@ object MatchEngine {
             else -> 0.0
         }
 
-        val effBat = ((batSkillBase + streakMod) * fitnessFactor * moraleFactor * formFactor * pressure / oppQuality)
+        val effBat = ((batSkillBase + streakMod) * fitnessFactor * moraleFactor * formFactor * sharpFactor * pressure / oppQuality)
             .coerceIn(5.0, 108.0)
         val style = s.playstyle
-        val effBowl = (s.bowling * bowlPitchFactor * fitnessFactor * moraleFactor * formFactor * pressure / oppQuality)
+        val effBowl = (s.bowling * bowlPitchFactor * fitnessFactor * moraleFactor * formFactor * sharpFactor * pressure / oppQuality)
             .coerceIn(5.0, 108.0)
 
         val inningsCount = if (fx.format == Format.FIRST_CLASS) 2 else 1
@@ -248,19 +253,20 @@ object MatchEngine {
             "Defensive" -> 0.62 to 0.72
             else -> 1.0 to 1.0
         }
-        // Elite class is nonlinear: near-max skill = near-invincible. A 99-rated bat almost
-        // never gets out and turns the strike over into boundaries. Mid/low stays realistic.
-        val elite = ((effBat - 70.0) / 30.0).coerceIn(0.0, 1.3)          // 0 at 70, 1 at 100, >1 above
-        val survival = 1.0 - elite * 0.86                                 // up to ~86% fewer dismissals
-        val pOutFloor = if (effBat >= 95) 0.0015 else 0.010
-        val pOut = (pOutBase * (1.75 - effBat / 85.0) * riskMult * survival).coerceIn(pOutFloor, 0.20)
+        // Class helps, but on Realistic even the best get out — no invincibility.
+        // eliteMult (per difficulty) controls how far the old dominance curve survives.
+        val elite = ((effBat - 70.0) / 30.0).coerceIn(0.0, 1.3) * Difficulty.eliteMult(s)
+        val survival = 1.0 - elite * 0.80
+        val pOutFloor = when (s.difficulty) { "Easy" -> 0.004; "Hardcore" -> 0.014; else -> 0.008 }
+        val pOut = (pOutBase * (1.65 - effBat / 95.0) * riskMult * survival * Difficulty.dismissalMult(s))
+            .coerceIn(pOutFloor, 0.22)
 
         // scoring weights: dot, 1, 2, 3, 4, 6 — raw power + class drive the boundary count
-        val boundaryBoost = (0.45 + s.power / 320.0 + effBat / 420.0 + elite * 0.22) * boundaryMult
+        val boundaryBoost = (0.42 + s.power / 340.0 + effBat / 460.0 + elite * 0.35) * boundaryMult
         val w = when (fx.format) {
-            Format.T20 -> doubleArrayOf(0.29 - elite * 0.14, 0.37, 0.10, 0.01, 0.15 * boundaryBoost, 0.08 * boundaryBoost)
-            Format.ODI -> doubleArrayOf(0.44 - elite * 0.18, 0.34, 0.09, 0.01, 0.07 * boundaryBoost, 0.025 * boundaryBoost)
-            Format.FIRST_CLASS -> doubleArrayOf(0.61 - elite * 0.20, 0.24, 0.06, 0.01, 0.055 * boundaryBoost, 0.008 * boundaryBoost)
+            Format.T20 -> doubleArrayOf(0.29 - elite * 0.10, 0.37, 0.10, 0.01, 0.15 * boundaryBoost, 0.08 * boundaryBoost)
+            Format.ODI -> doubleArrayOf(0.44 - elite * 0.12, 0.34, 0.09, 0.01, 0.07 * boundaryBoost, 0.025 * boundaryBoost)
+            Format.FIRST_CLASS -> doubleArrayOf(0.61 - elite * 0.14, 0.24, 0.06, 0.01, 0.055 * boundaryBoost, 0.008 * boundaryBoost)
         }
         val total = w.sum()
 
@@ -268,8 +274,8 @@ object MatchEngine {
         var out = false; var ballsAtHundred = 0
         while (balls < ballCap) {
             balls++
-            // marathon-innings fatigue — but elite players barely tire (invincible feel)
-            val fatigue = 1.0 + (runs / 210.0) * (runs / 210.0) * 0.30 * (1.0 - elite * 0.8)
+            // marathon innings tire everyone — big scores get progressively harder to extend
+            val fatigue = 1.0 + (runs / 190.0) * (runs / 190.0) * 0.45 * (1.0 - elite * 0.4)
             if (rng.nextDouble() < pOut * fatigue) { out = true; break }
             var r = rng.nextDouble() * total
             var outcome = 0
@@ -300,17 +306,17 @@ object MatchEngine {
             Format.ODI -> 0.031
             Format.FIRST_CLASS -> 0.026
         }
-        // elite bowlers take piles of wickets and leak almost nothing
-        val elite = ((effBowl - 70.0) / 30.0).coerceIn(0.0, 1.3)
-        val wktCap = if (effBowl >= 95) 10 else 7
-        val pWkt = (pWktBase * (0.35 + effBowl / 130.0 + elite * 0.9)).coerceIn(0.005, 0.16)
+        // class helps, but wickets are earned — no auto-fifers on Realistic
+        val elite = ((effBowl - 70.0) / 30.0).coerceIn(0.0, 1.3) * Difficulty.eliteMult(s)
+        val wktCap = 7
+        val pWkt = (pWktBase * (0.35 + effBowl / 145.0 + elite * 0.7)).coerceIn(0.005, 0.13)
         var wickets = 0
         repeat(balls) { if (rng.nextDouble() < pWkt && wickets < wktCap) wickets++ }
         val rpb = when (fx.format) {
             Format.T20 -> 1.40
             Format.ODI -> 0.92
             Format.FIRST_CLASS -> 0.54
-        } * (1.38 - effBowl / 260.0 - s.control / 700.0 - elite * 0.35) * (0.85 + rng.nextDouble() * 0.3)
+        } * (1.38 - effBowl / 300.0 - s.control / 800.0 - elite * 0.25) * (0.85 + rng.nextDouble() * 0.3)
         val conceded = (balls * rpb).roundToInt().coerceAtLeast(0)
         return BowlingLine(balls, conceded, wickets.coerceAtMost(10))
     }

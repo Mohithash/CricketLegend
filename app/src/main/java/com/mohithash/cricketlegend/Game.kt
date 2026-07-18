@@ -83,7 +83,7 @@ object Game {
 
     fun newGame(name: String, country: String, role: Role, startAge: Int = 18,
                 playstyle: String = "Balanced", statTier: String = "Talented",
-                formatFocus: String = "All") {
+                formatFocus: String = "All", difficulty: String = "Realistic") {
         // younger starts begin with rawer skills — the prodigy has upside, not polish
         val ageGap = (18 - startAge).coerceAtLeast(0)
         val (bat0, bowl0) = when (role) {
@@ -122,10 +122,12 @@ object Game {
             fitness = if (god) 99.0 else 70.0,
             fame = if (god) 40.0 else 5.0,
             playstyle = playstyle,
-            formatFocus = formatFocus
+            formatFocus = formatFocus,
+            difficulty = difficulty
         )
         s.propertyMarket.addAll(RealData.baseProperties.map { it.copy() })
         Finance.initMarket(s)
+        com.mohithash.cricketlegend.engine.Allocations.seedDefaults(s)
         com.mohithash.cricketlegend.engine.WorldSim.seedRivals(s, kotlin.random.Random.Default)
         s.battingPosition = when (role) {
             Role.BATTER -> 3; Role.WICKET_KEEPER -> 4; Role.ALL_ROUNDER -> 5; Role.BOWLER -> 8
@@ -313,6 +315,7 @@ object Game {
         Scheduler.buildSeason(s)
     }
 
+    fun setAllocation(id: String, weekly: Long) = mutate { com.mohithash.cricketlegend.engine.Allocations.set(it, id, weekly) }
     fun setTrainingFocus(focus: String) = mutate { it.trainingFocus = focus; toast = "Training focus: $focus" }
     fun setPlaystyle(style: String) = mutate { it.playstyle = style; toast = "Playing style set to $style" }
     fun setBattingPositionFeedback(pos: Int) = mutate { it.battingPosition = pos.coerceIn(1, 8); toast = "You'll bat at #${it.battingPosition}" }

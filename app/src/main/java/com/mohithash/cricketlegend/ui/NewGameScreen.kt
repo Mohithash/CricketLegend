@@ -43,6 +43,7 @@ fun NewGameScreen() {
     var playstyle by remember { mutableStateOf("Balanced") }
     var statTier by remember { mutableStateOf("Talented") }
     var formatFocus by remember { mutableStateOf("All") }
+    var difficulty by remember { mutableStateOf("Realistic") }
 
     Column(
         Modifier
@@ -148,21 +149,33 @@ fun NewGameScreen() {
         listOf(
             "Rookie" to "Raw and unproven — the grind of a lifetime",
             "Talented" to "A promising prospect (default)",
-            "Superstar" to "Elite from day one",
-            "GOD MODE" to "Max stats — invincible, break records every game"
+            "Superstar" to "Elite from day one"
         ).forEach { (tier, desc) ->
             val sel = statTier == tier
             Button(
                 onClick = { statTier = tier },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (sel) (if (tier == "GOD MODE") GoldAccent else PitchGreen) else CardNavy
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = if (sel) PitchGreen else CardNavy),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("$tier — $desc", fontSize = 11.sp,
-                    color = if (sel && tier == "GOD MODE") DeepNavy else TextPrimary)
+                Text("$tier — $desc", fontSize = 11.sp, color = TextPrimary)
             }
+        }
+
+        SectionHeader("Difficulty")
+        listOf(
+            "Easy" to "Forgiving — fast progress, few setbacks",
+            "Realistic" to "A true cricketing life (recommended)",
+            "Hardcore" to "Brutal — one bad run and you're dropped"
+        ).forEach { (d, desc) ->
+            val sel = difficulty == d
+            Button(
+                onClick = { difficulty = d },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (sel) (if (d == "Hardcore") BallRed else PitchGreen) else CardNavy),
+                shape = RoundedCornerShape(10.dp)
+            ) { Text("$d — $desc", fontSize = 11.sp, color = TextPrimary) }
         }
 
         SectionHeader("Format Focus")
@@ -197,7 +210,7 @@ fun NewGameScreen() {
 
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { Game.newGame(name.trim(), country, role, startAge, playstyle, statTier, formatFocus) },
+            onClick = { Game.newGame(name.trim(), country, role, startAge, playstyle, statTier, formatFocus, difficulty) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),

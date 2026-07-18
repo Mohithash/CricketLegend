@@ -112,10 +112,26 @@ object Progression {
             while (s.recentScores.size > 5) s.recentScores.removeAt(0)
         }
 
+        // mid-season axe: a genuinely poor run can cost your international spot right now
+        if (fx.level == Level.INTERNATIONAL && s.form < -2.5 && s.recentScores.size >= 4 &&
+            s.recentScores.takeLast(4).all { it < 20 } &&
+            rng.nextDouble() < Difficulty.midSeasonDropChance(s)
+        ) {
+            when {
+                s.inNationalTest && fx.statKey == StatKey.INTL_TEST -> { s.inNationalTest = false; s.addNews("AXED mid-series from the Test XI after a wretched run of scores.") }
+                s.inNationalODI && fx.statKey == StatKey.INTL_ODI -> { s.inNationalODI = false; s.addNews("Dropped from the ODI side — the selectors have seen enough.") }
+                s.inNationalT20 && fx.statKey == StatKey.INTL_T20 -> { s.inNationalT20 = false; s.addNews("Left out of the T20I team mid-season.") }
+            }
+            s.morale = (s.morale - 10).coerceAtLeast(5.0)
+        }
+
         // story-arc timers
         s.activeArc?.let { if (it.matchesUntilNext > 0) it.matchesUntilNext-- }
 
         checkMilestones(s, fx)
+
+        // every match dulls your edge; rest between games restores it (Finance.processWeeks)
+        s.sharpness = (s.sharpness - 9.0).coerceAtLeast(0.0)
 
         s.seasonRatings.add(report.rating)
         growSkills(s, report)
@@ -169,11 +185,13 @@ object Progression {
             s.age <= 33 -> 0.45
             else -> 0.15
         }
-        val batCoach = 1.0 + (s.staff["bat_coach"] ?: -1).plus(1) * 0.35
-        val bowlCoach = 1.0 + (s.staff["bowl_coach"] ?: -1).plus(1) * 0.35
+        // coaching is now a continuous weekly-budget dial (see Allocations)
+        val coach = Allocations.coachingMult(s)
+        val batCoach = coach
+        val bowlCoach = coach
         val focusBat = when (s.trainingFocus) { "Batting" -> 1.6; "Bowling" -> 0.5; "Fitness" -> 0.7; else -> 1.0 }
         val focusBowl = when (s.trainingFocus) { "Bowling" -> 1.6; "Batting" -> 0.5; "Fitness" -> 0.7; else -> 1.0 }
-        val perf = (report.rating / 6.5).coerceIn(0.5, 1.5)
+        val perf = (report.rating / 6.5).coerceIn(0.5, 1.5) * Difficulty.growthMult(s)
 
         s.batting = (s.batting + 0.06 * ageFactor * batCoach * focusBat * perf).coerceIn(1.0, 99.0)
         if (s.role == Role.BOWLER || s.role == Role.ALL_ROUNDER) {
@@ -198,7 +216,10 @@ object Progression {
 
     private fun maybeInjury(s: GameState, rng: Random) {
         val physio = (s.staff["physio"] ?: -1) + 1  // 0..3
-        val risk = 0.045 * (1.35 - s.fitness / 100.0) * (1.0 - physio * 0.22)
+        // tired, under-cooked bodies break down more often
+        val fatigueRisk = 1.0 + (100.0 - s.sharpness) / 140.0
+        val risk = 0.045 * (1.35 - s.fitness / 100.0) * (1.0 - physio * 0.22) *
+            fatigueRisk * Difficulty.injuryMult(s) * Allocations.injuryReduction(s)
         if (rng.nextDouble() < risk.coerceAtLeast(0.004)) {
             val weeks = 1 + rng.nextInt(6) - physio.coerceAtMost(2)
             if (weeks > 0) {
@@ -395,15 +416,16 @@ object Progression {
 
     private fun updateSelection(s: GameState, avgRating: Double, rng: Random) {
         val bestSkill = max(s.batting, s.bowling)
+        val bar = Difficulty.selectionBar(s)   // harder difficulty raises the whole ladder
         // international cricket has a minimum age (17), however famous the teenager is
         if (s.age < 17) { s.fame = s.fame.coerceIn(0.0, 100.0); return }
-        if (!s.inNationalT20 && "T20I" !in s.retiredFormats && s.fame >= 20 && bestSkill >= 63) {
+        if (!s.inNationalT20 && "T20I" !in s.retiredFormats && s.fame >= 20 + bar && bestSkill >= 63 + bar) {
             s.inNationalT20 = true
             s.addNews("MAIDEN CALL-UP! Selected for ${s.country}'s T20I squad!")
             s.fame += 5
         }
         if (s.formatFocus != "T20Only" &&
-            !s.inNationalODI && "ODI" !in s.retiredFormats && s.fame >= 30 && bestSkill >= 68) {
+            !s.inNationalODI && "ODI" !in s.retiredFormats && s.fame >= 30 + bar && bestSkill >= 68 + bar) {
             s.inNationalODI = true
             s.addNews("Selected for ${s.country}'s ODI squad!")
             s.fame += 4

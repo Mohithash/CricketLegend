@@ -7,29 +7,30 @@ import org.junit.Assert.assertTrue
 import kotlin.random.Random
 
 class GodModeTest {
-    private fun godBat() = GameState(country="India", role=Role.BATTER, batting=99.0,
-        vsPace=99.0, vsSpin=99.0, power=99.0, fitness=99.0, morale=100.0, battingPosition=1)
+    private fun eliteBat(diff: String) = GameState(country="India", role=Role.BATTER, batting=95.0,
+        vsPace=95.0, vsSpin=95.0, power=92.0, fitness=99.0, morale=90.0, battingPosition=3, difficulty=diff)
     private fun avgBat() = GameState(country="India", role=Role.BATTER, batting=60.0,
-        vsPace=60.0, vsSpin=60.0, power=58.0, fitness=70.0, battingPosition=3)
+        vsPace=60.0, vsSpin=60.0, power=58.0, fitness=70.0, battingPosition=3, difficulty="Realistic")
 
-    @Test fun godModeDominates() {
+    private fun t20Avg(g: GameState, n: Int): Double {
         val fx = Fixture(1,20,Format.T20,Level.INTERNATIONAL,StatKey.INTL_T20,"Australia",venue="MCG",pitch="FLAT")
-        var god=0; var godTons=0; var avg=0
-        val g = godBat(); val a = avgBat()
-        repeat(500){
-            val gr = MatchEngine.simulate(g, fx, Random(it)).batting.sumOf{b->b.runs}
-            god+=gr; if(gr>=100) godTons++
-            avg += MatchEngine.simulate(a, fx, Random(it+9999)).batting.sumOf{b->b.runs}
-        }
-        println("GOD T20 avg=${god/500.0} tons/500=$godTons | AVG player=${avg/500.0}")
-        // ODI
-        val fxo = Fixture(1,20,Format.ODI,Level.INTERNATIONAL,StatKey.INTL_ODI,"Australia",venue="MCG",pitch="FLAT")
-        var godO=0; var godODoubles=0
-        repeat(300){ val r=MatchEngine.simulate(g, fxo, Random(it)).batting.sumOf{b->b.runs}; godO+=r; if(r>=200) godODoubles++ }
-        println("GOD ODI avg=${godO/300.0} doubles/300=$godODoubles")
-        assertTrue("god T20 avg should be huge", god/500.0 > 80)
-        assertTrue("god should hit a ton most games", godTons > 300)
-        assertTrue("average player must stay realistic", avg/500.0 < 45)
+        var runs=0; var out=0
+        repeat(n){ val b=MatchEngine.simulate(g, fx, Random(it)).batting[0]; runs+=b.runs; if(b.out) out++ }
+        return runs.toDouble()/out.coerceAtLeast(1)
+    }
+
+    @Test fun realismCurveAndDifficultyOrdering() {
+        val elite = t20Avg(eliteBat("Realistic"), 600)
+        val avg = t20Avg(avgBat(), 600)
+        val eliteEasy = t20Avg(eliteBat("Easy"), 600)
+        val eliteHard = t20Avg(eliteBat("Hardcore"), 600)
+        println("Realistic elite T20 avg=$elite | avg player=$avg | Easy elite=$eliteEasy | Hardcore elite=$eliteHard")
+        // an elite bat should be clearly better than an average one, but not invincible
+        assertTrue("elite ($elite) should beat average ($avg)", elite > avg + 8)
+        assertTrue("elite T20 avg should be believable (<95), not 175", elite < 95)
+        assertTrue("average player realistic (<45)", avg < 45)
+        // difficulty must matter: Easy is kinder than Hardcore for the same player
+        assertTrue("Easy ($eliteEasy) easier than Hardcore ($eliteHard)", eliteEasy > eliteHard)
     }
 
     @Test fun scoreboardMatchesResult() {

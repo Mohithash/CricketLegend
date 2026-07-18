@@ -68,6 +68,8 @@ object Finance {
         for (itemId in s.ownedItems) {
             exp += RealData.lifestyleItems.firstOrNull { it.id == itemId }?.weeklyUpkeep ?: 0
         }
+        // the slider budget the player has dialled in
+        exp += Allocations.weeklyTotal(s)
         // minors live with family — negligible personal costs until they turn pro at 16
         if (s.age < 16) return exp
         exp += 25_000 + (s.fame * 2_000).toLong()          // celebrity cost of living
@@ -77,10 +79,13 @@ object Finance {
 
     fun processWeeks(s: GameState, weeks: Int, rng: Random = Random.Default) {
         if (weeks <= 0) return
+        // rest weeks between matches sharpen you back up
+        s.sharpness = (s.sharpness + weeks * 7.0).coerceAtMost(100.0)
         val inc = weeklyIncome(s) * weeks
         val exp = weeklyExpenses(s) * weeks
         if (inc > 0) s.addLedger("Income x$weeks wk (net of tax)", inc)
-        if (exp > 0) s.addLedger("Expenses x$weeks wk (staff, upkeep, living)", -exp)
+        if (exp > 0) s.addLedger("Expenses x$weeks wk (budget, upkeep, living)", -exp)
+        Allocations.applyWeekly(s, weeks, rng)   // dial effects (skills handled at match time)
         updateMarket(s, weeks, rng)
     }
 

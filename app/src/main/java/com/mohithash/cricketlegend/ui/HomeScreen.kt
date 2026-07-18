@@ -89,6 +89,7 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
                         SkillBar("Batting", s.batting)
                         if (s.bowling > 25) SkillBar("Bowling", s.bowling)
                         SkillBar("Fitness", s.fitness, color = WinGreen)
+                        SkillBar("Sharpness", s.sharpness, color = if (s.sharpness > 50) WinGreen else LossRed)
                         SkillBar("Form", s.form + 5, 10.0, color = if (s.form >= 0) WinGreen else LossRed)
                         SkillBar("Fame", s.fame, color = GoldAccent)
                     }

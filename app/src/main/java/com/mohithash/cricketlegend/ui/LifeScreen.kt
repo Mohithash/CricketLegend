@@ -120,31 +120,25 @@ private fun TrainingTab(s: GameState) {
         }
     }
 
-    SectionHeader("Invest In Yourself — Support Staff")
-    for (opt in RealData.staffOptions) {
-        val currentTier = s.staff[opt.id] ?: -1
-        InfoCard {
-            Text(opt.name, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text(opt.description, color = TextDim, fontSize = 12.sp)
-            if (currentTier >= 0) {
-                KeyValueRow("Current", opt.tiers[currentTier], WinGreen)
-            }
-            Spacer(Modifier.height(6.dp))
-            opt.tiers.forEachIndexed { i, tierName ->
-                if (i > currentTier) {
-                    Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                        Button(
-                            onClick = { Game.hireStaff(opt.id, i) },
-                            colors = ButtonDefaults.buttonColors(containerColor = CardNavy)
-                        ) {
-                            Text(
-                                "$tierName — ${Money.fmt(opt.weeklyCost[i], s.country)}/wk",
-                                color = GoldAccent, fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
-            }
+    SectionHeader("Weekly Budget — Invest In Yourself")
+    InfoCard {
+        val total = com.mohithash.cricketlegend.engine.Allocations.weeklyTotal(s)
+        Text("Drag each dial to set your ongoing weekly spend. Higher spend = bigger effect, but it drains your wallet every week.",
+            color = TextDim, fontSize = 11.sp)
+        Spacer(Modifier.height(4.dp))
+        KeyValueRow("Total committed", Money.fmt(total, s.country) + "/wk",
+            if (total > com.mohithash.cricketlegend.engine.Finance.weeklyIncome(s)) LossRed else GoldAccent)
+        Spacer(Modifier.height(6.dp))
+        com.mohithash.cricketlegend.engine.Allocations.categories.forEach { cat ->
+            BudgetSlider(
+                emoji = cat.emoji,
+                label = cat.label,
+                blurb = cat.blurb,
+                value = com.mohithash.cricketlegend.engine.Allocations.get(s, cat.id),
+                max = cat.maxWeekly,
+                country = s.country,
+                onChange = { Game.setAllocation(cat.id, it) }
+            )
         }
     }
 }
@@ -229,22 +223,20 @@ private fun EmpireTab(s: GameState) {
         }
     }
 
-    SectionHeader("Social Media — ${fmtFollowers(s.followers)} followers")
+    SectionHeader("Social Media & PR — ${fmtFollowers(s.followers)} followers")
     InfoCard {
-        Text("Post at most once every couple of weeks.", color = TextDim, fontSize = 12.sp)
-        Spacer(Modifier.height(6.dp))
-        Button(onClick = { Game.socialPost("training") }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PitchGreen)) {
-            Text("Post training clip (+followers)", fontSize = 12.sp)
-        }
-        Button(onClick = { Game.socialPost("brand") }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = CardNavy)) {
-            Text("Paid brand promo (₹, -image)", color = GoldAccent, fontSize = 12.sp)
-        }
-        Button(onClick = { Game.socialPost("hottake") }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BallRed)) {
-            Text("Controversial hot take (risky)", fontSize = 12.sp)
-        }
+        Text("Your media team runs on a weekly budget. Spend more to grow your following, fame, public image and endorsement value.",
+            color = TextDim, fontSize = 11.sp)
+        val prCat = com.mohithash.cricketlegend.engine.Allocations.categories.first { it.id == "pr" }
+        BudgetSlider(
+            emoji = prCat.emoji, label = prCat.label, blurb = prCat.blurb,
+            value = com.mohithash.cricketlegend.engine.Allocations.get(s, "pr"),
+            max = prCat.maxWeekly, country = s.country,
+            onChange = { Game.setAllocation("pr", it) }
+        )
+        KeyValueRow("Public image", imageLabel(s.publicImage))
+        KeyValueRow("Endorsement boost", "×%.2f".format(
+            com.mohithash.cricketlegend.engine.Allocations.prDealMult(s)), WinGreen)
     }
 
     SectionHeader("Love Life")

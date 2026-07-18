@@ -462,6 +462,9 @@ data class GameState(
     val retiredFormats: MutableList<String> = mutableListOf(),
     var playstyle: String = "Balanced",       // Aggressive, Balanced, Defensive
     var formatFocus: String = "All",           // All, WhiteBall, T20Only
+    var difficulty: String = "Realistic",      // Easy, Realistic, Hardcore
+    var sharpness: Double = 100.0,             // match freshness; drops with play, restored by rest
+    val allocations: MutableMap<String, Long> = mutableMapOf(),  // weekly ₹ spend per category
     var nickname: String = "",
     val leagueHistory: MutableList<String> = mutableListOf(),   // "2027: Mumbai Mavericks (you: 3rd, 520 runs)"
     var derbyRival: String? = null,
