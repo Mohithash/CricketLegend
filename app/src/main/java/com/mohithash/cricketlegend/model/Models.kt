@@ -215,6 +215,27 @@ data class RivalPlayer(
 data class DynRecord(var holder: String, var value: Double)
 
 @Serializable
+data class SeriesState(
+    val opponent: String,
+    val statKey: String,
+    val length: Int,
+    var played: Int = 0,
+    var wins: Int = 0,
+    var losses: Int = 0,
+    var ratingSum: Double = 0.0
+)
+
+@Serializable
+data class Objective(
+    val id: String,
+    val label: String,
+    val target: Int,
+    val baseline: Int,
+    val rewardMoney: Long,
+    val rewardFame: Double
+)
+
+@Serializable
 data class BattingLine(
     val runs: Int,
     val balls: Int,
@@ -444,6 +465,8 @@ data class GameState(
     var nickname: String = "",
     val leagueHistory: MutableList<String> = mutableListOf(),   // "2027: Mumbai Mavericks (you: 3rd, 520 runs)"
     var derbyRival: String? = null,
+    var series: SeriesState? = null,
+    val seasonObjectives: MutableList<Objective> = mutableListOf(),
     var archRival: String? = null,
     var partnerType: String = "",
     var banSeasons: Int = 0,

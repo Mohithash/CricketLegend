@@ -123,6 +123,7 @@ object Progression {
         val broken = checkRecords(s, report)
         Tournaments.afterPlayerMatch(s, fx, report, rng)
         Tournaments.advance(s, fx, rng)
+        Series.afterMatch(s, fx, report)
         LifeSystems.ensureArchRival(s, rng)
         LifeSystems.checkGoat(s)
         LifeSystems.updateNickname(s)
@@ -283,6 +284,8 @@ object Progression {
             s.bowling = (s.bowling - (s.age - 33) * 0.5 / trainer).coerceAtLeast(15.0)
         }
 
+        Series.evaluateObjectives(s)
+        s.series = null
         WorldSim.advanceSeason(s, rng)
         awardsNight(s, avgRating)
         updateSelection(s, avgRating, rng)
@@ -332,6 +335,7 @@ object Progression {
         if (s.pendingAuction == null) {
             Scheduler.buildSeason(s, rng)
         }
+        Series.setSeasonObjectives(s, rng)
         s.addNews("A new season begins: ${s.year}. Age ${s.age}.")
 
         if (s.age >= 42 && !s.retired) retire(s)

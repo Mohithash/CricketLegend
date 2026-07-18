@@ -17,6 +17,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,13 +65,19 @@ fun KeyValueRow(label: String, value: String, valueColor: Color = TextPrimary) {
 
 @Composable
 fun SkillBar(label: String, value: Double, max: Double = 100.0, color: Color = PitchGreen) {
+    // bars ease into place so every change is visible
+    val animated by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = (value / max).toFloat().coerceIn(0f, 1f),
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 600),
+        label = "skillbar"
+    )
     Column(Modifier.padding(vertical = 4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = TextDim, fontSize = 12.sp)
             Text("%.0f".format(value), color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         LinearProgressIndicator(
-            progress = { (value / max).toFloat().coerceIn(0f, 1f) },
+            progress = { animated },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(7.dp)

@@ -131,6 +131,7 @@ object Game {
             Role.BATTER -> 3; Role.WICKET_KEEPER -> 4; Role.ALL_ROUNDER -> 5; Role.BOWLER -> 8
         }
         Scheduler.buildSeason(s)
+        com.mohithash.cricketlegend.engine.Series.setSeasonObjectives(s, kotlin.random.Random.Default)
         s.addNews(
             if (startAge < 14) "A once-in-a-generation talent emerges: ${s.playerName}, age $startAge, tearing up age-group cricket."
             else "A new star rises: ${s.playerName}, ${role.label}, age $startAge."

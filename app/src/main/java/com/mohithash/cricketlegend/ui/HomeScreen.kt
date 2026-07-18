@@ -16,6 +16,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -153,8 +155,12 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
                             color = LossRed, fontSize = 12.sp)
                     }
                     Spacer(Modifier.height(10.dp))
+                    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
                     Button(
-                        onClick = { Game.playNextMatch() },
+                        onClick = {
+                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            Game.playNextMatch()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
@@ -198,6 +204,38 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
             }
         }
 
+        // Live bilateral series scoreboard
+        s.series?.let { sr ->
+            if (sr.length >= 2) {
+                SectionHeader("Series in Progress")
+                InfoCard {
+                    Text("${StatKey.label(sr.statKey)} vs ${sr.opponent}", color = TextPrimary,
+                        fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("${s.country}  ${sr.wins} — ${sr.losses}  ${sr.opponent}   (match ${sr.played}/${sr.length})",
+                        color = if (sr.wins >= sr.losses) WinGreen else LossRed,
+                        fontWeight = FontWeight.Black, fontSize = 16.sp)
+                }
+            }
+        }
+
+        // Board objectives with live progress
+        if (s.seasonObjectives.isNotEmpty() && !s.retired) {
+            SectionHeader("Season Objectives")
+            InfoCard {
+                s.seasonObjectives.forEach { o ->
+                    val (cur, target) = com.mohithash.cricketlegend.engine.Series.objectiveProgress(s, o)
+                    val done = cur >= target
+                    Text((if (done) "✔ " else "• ") + o.label,
+                        color = if (done) WinGreen else TextPrimary, fontSize = 12.sp,
+                        fontWeight = if (done) FontWeight.Bold else FontWeight.Normal)
+                    if (!done && target > 1) {
+                        SkillBar("${cur.coerceAtLeast(0)} / $target",
+                            cur.coerceAtLeast(0).toDouble(), target.toDouble(), color = GoldAccent)
+                    }
+                }
+            }
+        }
+
         SectionHeader("Icon Status")
         InfoCard {
             val goat = com.mohithash.cricketlegend.engine.LifeSystems.goatScore(s)
@@ -217,11 +255,18 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
         }
 
         SectionHeader("News Feed")
+        var newsExpanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         InfoCard {
             if (s.news.isEmpty()) Text("No news yet. Go make headlines!", color = TextDim, fontSize = 13.sp)
-            s.news.take(12).forEach {
+            s.news.take(if (newsExpanded) 25 else 6).forEach {
                 Text("• $it", color = TextPrimary, fontSize = 12.sp,
                     modifier = Modifier.padding(vertical = 3.dp))
+            }
+            if (s.news.size > 6) {
+                OutlinedButton(onClick = { newsExpanded = !newsExpanded }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (newsExpanded) "Show less ▲" else "Show ${s.news.size - 6} more ▼",
+                        color = GoldAccent, fontSize = 12.sp)
+                }
             }
         }
         Spacer(Modifier.height(20.dp))

@@ -1,5 +1,6 @@
 package com.mohithash.cricketlegend.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,34 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
                     lineHeight = 24.sp)
                 Text("— our correspondent, ${r.venue.ifEmpty { "the ground" }}",
                     color = TextDim, fontSize = 11.sp)
+            }
+        }
+
+        // Full-width result celebration banner
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        if (r.won) listOf(PitchGreen, WinGreen) else listOf(BallRed, LossRed)
+                    ),
+                    androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                )
+        ) {
+            androidx.compose.foundation.layout.Column(
+                Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+            ) {
+                Text(if (r.won) "🏆 VICTORY" else "DEFEAT",
+                    color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                if (r.recordsBroken.isNotEmpty()) {
+                    Text("🎉 ${r.recordsBroken.size} WORLD RECORD${if (r.recordsBroken.size > 1) "S" else ""} BROKEN 🎉",
+                        color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                if (r.manOfTheMatch) {
+                    Text("⭐ Player of the Match", color = TextPrimary, fontSize = 12.sp)
+                }
             }
         }
 
