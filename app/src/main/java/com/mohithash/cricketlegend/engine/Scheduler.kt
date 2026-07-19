@@ -24,7 +24,7 @@ object Scheduler {
                 venueCountry: String, tournament: String? = null, stage: Stage? = null) {
             val v = RealData.venueIn(venueCountry, rng)
             s.fixtures.add(Fixture(id++, week, format, level, statKey, opponent,
-                tournament, stage, venue = v.name, pitch = v.pitch))
+                tournament, stage, venue = v.name, pitch = v.pitch, home = (venueCountry == s.country)))
         }
 
         // --- Prodigy years: age-group cricket only until ready for domestic ---

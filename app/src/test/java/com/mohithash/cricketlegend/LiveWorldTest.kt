@@ -97,6 +97,30 @@ class LiveWorldTest {
     }
 
     @Test
+    fun splitStatsAreTracked() {
+        val rng = Random(21)
+        val s = GameState(country = "India", role = Role.BATTER, batting = 80.0,
+            vsPace = 78.0, vsSpin = 76.0, power = 75.0, inNationalT20 = true, inNationalODI = true, inNationalTest = true)
+        s.propertyMarket.addAll(RealData.baseProperties.map { it.copy() })
+        Scheduler.buildSeason(s, rng)
+        var guard = 0
+        while (guard++ < 300) {
+            val fx = s.nextFixture() ?: break
+            s.week = fx.week
+            com.mohithash.cricketlegend.engine.Tournaments.startFor(s, fx, rng)
+            val report = MatchEngine.simulate(s, fx, rng)
+            Progression.applyReport(s, fx, report, rng)
+        }
+        assertTrue("split runs recorded by opponent", s.splitRuns.keys.any { it.startsWith("opp:") })
+        assertTrue("home/away tracked", s.splitRuns.keys.any { it.startsWith("loc:") })
+        assertTrue("dismissal types recorded", s.dismissalTypes.isNotEmpty())
+        assertTrue("fantasy points accrued", s.fantasyPoints > 0)
+        // split average sanity
+        val oppKey = s.splitRuns.keys.first { it.startsWith("opp:") }
+        assertTrue(com.mohithash.cricketlegend.engine.Progression.splitAverage(s, oppKey) >= 0.0)
+    }
+
+    @Test
     fun prodigyStartsInYouthCricket() {
         val s = GameState(playerName = "Baby GOAT", country = "India", role = Role.BATTER,
             age = 9, batting = 40.0)

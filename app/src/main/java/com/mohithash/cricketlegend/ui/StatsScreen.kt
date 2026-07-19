@@ -84,6 +84,104 @@ private fun StatsTab(s: GameState) {
     if (s.stats.values.all { it.matches == 0 }) {
         InfoCard { Text("Play some matches to build your career stats.", color = TextDim) }
     }
+    StatsHub(s)
+}
+
+@Composable
+private fun StatsHub(s: GameState) {
+    val prog = com.mohithash.cricketlegend.engine.Progression
+    if (s.splitRuns.isEmpty()) return
+
+    StatTileGrid(listOf(
+        Triple("Fantasy Pts", "${s.fantasyPoints}", GoldAccent),
+        Triple("Best Stand", if (s.bestPartnership > 0) "${s.bestPartnership}" else "-", WinGreen),
+        Triple("100 conv %", "${conversionPct(s)}%", Violet)
+    ))
+
+    SectionHeader("Average by Opposition")
+    InfoCard {
+        val opps = s.splitRuns.keys.filter { it.startsWith("opp:") }
+            .sortedByDescending { s.splitRuns[it] ?: 0 }.take(12)
+        if (opps.isEmpty()) Text("No international innings yet.", color = TextDim, fontSize = 12.sp)
+        Row(Modifier.fillMaxWidth()) {
+            Text("Opponent", color = TextDim, fontSize = 10.sp, modifier = Modifier.weight(1f))
+            Text("Runs", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(50.dp))
+            Text("Avg", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(44.dp))
+            Text("SR", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(44.dp))
+        }
+        opps.forEach { k ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+                Text(k.removePrefix("opp:"), color = TextPrimary, fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                Text("${s.splitRuns[k]}", color = GoldAccent, fontSize = 11.sp, modifier = Modifier.width(50.dp))
+                Text("%.1f".format(prog.splitAverage(s, k)), color = TextPrimary, fontSize = 11.sp, modifier = Modifier.width(44.dp))
+                Text("%.0f".format(prog.splitStrikeRate(s, k)), color = TextDim, fontSize = 11.sp, modifier = Modifier.width(44.dp))
+            }
+        }
+    }
+
+    SectionHeader("Conditions Splits")
+    InfoCard {
+        val rows = listOf(
+            "loc:home" to "Home", "loc:away" to "Away",
+            "pitch:FLAT" to "Flat decks", "pitch:PACE" to "Pace decks",
+            "pitch:SPIN" to "Spin decks", "pitch:GREEN" to "Green tops"
+        )
+        rows.forEach { (k, label) ->
+            if ((s.splitRuns[k] ?: 0) > 0)
+                KeyValueRow(label, "${s.splitRuns[k]} runs · avg %.1f · SR %.0f"
+                    .format(prog.splitAverage(s, k), prog.splitStrikeRate(s, k)))
+        }
+    }
+
+    SectionHeader("Dismissal Breakdown")
+    InfoCard {
+        val total = s.dismissalTypes.values.sum().coerceAtLeast(1)
+        s.dismissalTypes.entries.sortedByDescending { it.value }.forEach { (type, n) ->
+            KeyValueRow(type, "$n  (${n * 100 / total}%)",
+                if (type == "Not out") WinGreen else TextPrimary)
+        }
+    }
+
+    if (s.battingAvgBySeason.size >= 2) {
+        SectionHeader("Batting Average Progression")
+        InfoCard {
+            LineChart(s.battingAvgBySeason.map { it }, modifier = Modifier.fillMaxWidth().height(70.dp), color = GoldAccent)
+            Text("Career international average over the seasons (×0.1). Now: %.1f"
+                .format((s.battingAvgBySeason.lastOrNull() ?: 0) / 10.0), color = TextDim, fontSize = 10.sp)
+        }
+    }
+    val testRank = s.rankHist["INTL_TEST"]
+    if (testRank != null && testRank.size >= 2) {
+        SectionHeader("ICC Test Ranking History")
+        InfoCard {
+            // invert so up = better (rank 1 at top)
+            LineChart(testRank.map { 101 - it }, modifier = Modifier.fillMaxWidth().height(60.dp), color = WinGreen)
+            Text("Higher = better. Best: World #${testRank.minOrNull()}", color = TextDim, fontSize = 10.sp)
+        }
+    }
+    if (s.bestPartnership > 0) {
+        InfoCard { KeyValueRow("Best partnership", "${s.bestPartnership} with ${s.bestPartnershipWith}", GoldAccent) }
+    }
+}
+
+@Composable
+private fun CompareRow(label: String, mine: Int, theirs: Int) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+        Text("$mine", color = if (mine >= theirs) WinGreen else TextDim,
+            fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(70.dp))
+        Text(label, color = TextDim, fontSize = 11.sp, modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("$theirs", color = if (theirs >= mine) WinGreen else TextDim,
+            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End, modifier = Modifier.width(70.dp))
+    }
+}
+
+private fun conversionPct(s: GameState): Int {
+    val fifties = StatKey.INTL.sumOf { s.stat(it).fifties }
+    val tons = StatKey.INTL.sumOf { s.stat(it).hundreds }
+    val starts = fifties + tons
+    return if (starts > 0) tons * 100 / starts else 0
 }
 
 @Composable
@@ -244,7 +342,7 @@ private fun WorldDatabase(s: GameState) {
     SectionHeader("World Database — ${com.mohithash.cricketlegend.data.PlayerDB.roster().size} players, ${RealData.teams.size} nations")
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
         modifier = Modifier.padding(bottom = 4.dp)) {
-        listOf("Squads", "Runs", "Wickets", "Leagues").forEachIndexed { i, label ->
+        listOf("Squads", "Runs", "Wkts", "Leagues", "Compare").forEachIndexed { i, label ->
             androidx.compose.material3.Button(
                 onClick = { view = i },
                 modifier = Modifier.weight(1f),
@@ -310,6 +408,33 @@ private fun WorldDatabase(s: GameState) {
                     Text("${i + 1}. $name", color = if (name.startsWith("★")) GoldAccent else TextPrimary,
                         fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
                     Text("$w", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        4 -> {
+            var rivalName by remember { mutableStateOf(s.rivals.firstOrNull { !it.retired }?.name ?: "") }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                s.rivals.filter { !it.retired }.sortedByDescending { it.skill }.take(20).forEach { r ->
+                    androidx.compose.material3.Button(
+                        onClick = { rivalName = r.name },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = if (rivalName == r.name) GoldAccent else CardNavy),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(2.dp)
+                    ) { Text(r.name, fontSize = 9.sp, color = if (rivalName == r.name) DeepNavy else TextPrimary, maxLines = 1) }
+                }
+            }
+            val rival = s.rivals.firstOrNull { it.name == rivalName }
+            InfoCard {
+                Text("You  vs  ${rivalName}", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (rival != null) {
+                    CompareRow("Skill", maxOf(s.batting, s.bowling).toInt(), rival.skill.toInt())
+                    CompareRow("Age", s.age, rival.age)
+                    CompareRow("Intl runs", s.intlRuns, rival.intlRuns)
+                    CompareRow("Intl 100s", s.intlHundreds, rival.hundreds)
+                    CompareRow("Intl wickets", s.intlWickets, rival.intlWkts)
+                    CompareRow("Sixes", s.intlSixes, rival.sixes)
+                    CompareRow("Matches", s.intlMatches, rival.matches)
                 }
             }
         }

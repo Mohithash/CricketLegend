@@ -108,7 +108,8 @@ data class Fixture(
     var missed: Boolean = false,
     var won: Boolean? = null,
     val venue: String = "",
-    val pitch: String = "BALANCED"   // PACE, SPIN, GREEN, FLAT, BALANCED
+    val pitch: String = "BALANCED",   // PACE, SPIN, GREEN, FLAT, BALANCED
+    val home: Boolean = true
 )
 
 @Serializable
@@ -498,6 +499,17 @@ data class GameState(
     var dynastyName: String = "",
     val careerRunsBySeason: MutableList<Int> = mutableListOf(),
     val legacyBySeason: MutableList<Int> = mutableListOf(),
+
+    // deep statistics — split tracking (keys like "opp:Australia", "pitch:SPIN", "loc:home")
+    val splitRuns: MutableMap<String, Int> = mutableMapOf(),
+    val splitOuts: MutableMap<String, Int> = mutableMapOf(),
+    val splitBalls: MutableMap<String, Int> = mutableMapOf(),
+    val dismissalTypes: MutableMap<String, Int> = mutableMapOf(),   // Bowled/Caught/LBW/Run out/Stumped
+    val rankHist: MutableMap<String, MutableList<Int>> = mutableMapOf(),  // per-format season rank snapshots
+    val battingAvgBySeason: MutableList<Int> = mutableListOf(),      // avg*10 to store as int
+    var bestPartnership: Int = 0,
+    var bestPartnershipWith: String = "",
+    var fantasyPoints: Long = 0,
 
     // flow
     var pendingEvent: GameEvent? = null,

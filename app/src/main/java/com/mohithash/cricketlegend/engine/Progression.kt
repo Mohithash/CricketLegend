@@ -133,6 +133,7 @@ object Progression {
         s.activeArc?.let { if (it.matchesUntilNext > 0) it.matchesUntilNext-- }
 
         checkMilestones(s, fx)
+        recordSplits(s, fx, report, rng)
 
         // every match dulls your edge; rest between games restores it (Finance.processWeeks)
         s.sharpness = (s.sharpness - 9.0).coerceAtLeast(0.0)
@@ -178,6 +179,62 @@ object Progression {
             }
             if (s.stat(StatKey.INTL_TEST).matches == 100) fire("test_100", "100th TEST MATCH — the ultimate badge of longevity!")
         }
+    }
+
+    /** Records deep split statistics for the Stats Hub. */
+    private fun recordSplits(s: GameState, fx: Fixture, report: MatchReport, rng: Random) {
+        if (fx.level == Level.DOMESTIC) return
+        fun bump(map: MutableMap<String, Int>, key: String, v: Int) { map[key] = (map[key] ?: 0) + v }
+
+        val loc = if (fx.home) "loc:home" else "loc:away"
+        for (line in report.batting) {
+            listOf("opp:${fx.opponent}", "pitch:${fx.pitch}", loc).forEach { k ->
+                bump(s.splitRuns, k, line.runs)
+                bump(s.splitBalls, k, line.balls)
+                if (line.out) bump(s.splitOuts, k, 1)
+            }
+            // dismissal-type breakdown
+            val type = when {
+                !line.out -> "Not out"
+                line.dismissal.startsWith("lbw") -> "LBW"
+                line.dismissal.startsWith("run out") -> "Run out"
+                line.dismissal.contains("(keeper)") || line.dismissal.startsWith("st ") -> "Caught behind"
+                line.dismissal.startsWith("b ") || line.dismissal.startsWith("c & b") -> "Bowled/c&b"
+                line.dismissal.startsWith("c ") -> "Caught"
+                else -> "Other"
+            }
+            bump(s.dismissalTypes, type, 1)
+        }
+
+        // best partnership (approximated around your top score with a real teammate)
+        val top = report.batting.maxOfOrNull { it.runs } ?: 0
+        if (top >= 40) {
+            val stand = top + 20 + rng.nextInt(70)
+            if (stand > s.bestPartnership) {
+                s.bestPartnership = stand
+                s.bestPartnershipWith = s.rivals.filter { !it.retired && it.country == s.country && !it.isBowler }
+                    .randomOrNull(rng)?.name ?: "a teammate"
+            }
+        }
+
+        // fantasy points (a single composite for the optimisers)
+        var fp = 0L
+        report.batting.forEach { fp += it.runs + it.fours + it.sixes * 2 + (if (it.runs >= 100) 16 else if (it.runs >= 50) 8 else 0) }
+        report.bowling.forEach { fp += it.wickets * 25 + (if (it.wickets >= 5) 16 else 0) }
+        fp += report.catches * 8 + (if (report.manOfTheMatch) 25 else 0)
+        s.fantasyPoints += fp
+    }
+
+    fun splitAverage(s: GameState, key: String): Double {
+        val runs = s.splitRuns[key] ?: return 0.0
+        val outs = s.splitOuts[key] ?: 0
+        return if (outs > 0) runs.toDouble() / outs else runs.toDouble()
+    }
+
+    fun splitStrikeRate(s: GameState, key: String): Double {
+        val runs = s.splitRuns[key] ?: return 0.0
+        val balls = s.splitBalls[key] ?: 0
+        return if (balls > 0) runs * 100.0 / balls else 0.0
     }
 
     private fun growSkills(s: GameState, report: MatchReport) {
@@ -349,6 +406,14 @@ object Progression {
         // snapshot career trajectory for the Home dashboard graph
         s.careerRunsBySeason.add(s.intlRuns + s.stat(StatKey.LEAGUE).runs)
         s.legacyBySeason.add(LifeSystems.goatScore(s))
+
+        // rank + batting-average history for the Stats Hub graphs
+        for (k in StatKey.INTL) {
+            s.rankPoints[k]?.let { s.rankHist.getOrPut(k) { mutableListOf() }.add(rankOf(it)) }
+        }
+        val intlInns = StatKey.INTL.sumOf { s.stat(it).innings - s.stat(it).notOuts }
+        s.battingAvgBySeason.add(if (intlInns > 0) (s.intlRuns * 10 / intlInns) else 0)
+        while (s.battingAvgBySeason.size > 30) s.battingAvgBySeason.removeAt(0)
         while (s.careerRunsBySeason.size > 30) s.careerRunsBySeason.removeAt(0)
         while (s.legacyBySeason.size > 30) s.legacyBySeason.removeAt(0)
 
