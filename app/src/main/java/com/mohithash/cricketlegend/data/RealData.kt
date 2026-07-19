@@ -76,7 +76,28 @@ object RealData {
             listOf("Taskin Ahmed", "Mustafizur Rahman", "Nahid Rana", "Rishad Hossain")),
         NationalTeam("Afghanistan", 72,
             listOf("Ibrahim Zadran", "Rahmanullah Gurbaz", "Azmatullah Omarzai", "Hashmatullah Shahidi"),
-            listOf("Rashid Khan", "Fazalhaq Farooqi", "Mujeeb Ur Rahman", "AM Ghazanfar"))
+            listOf("Rashid Khan", "Fazalhaq Farooqi", "Mujeeb Ur Rahman", "AM Ghazanfar")),
+        NationalTeam("Ireland", 62,
+            listOf("Paul Stirling", "Andrew Balbirnie", "Harry Tector", "Lorcan Tucker"),
+            listOf("Josh Little", "Mark Adair", "Barry McCarthy", "Ben White")),
+        NationalTeam("Zimbabwe", 60,
+            listOf("Sikandar Raza", "Sean Williams", "Craig Ervine", "Brian Bennett"),
+            listOf("Blessing Muzarabani", "Richard Ngarava", "Wellington Masakadza", "Tendai Chatara")),
+        NationalTeam("Scotland", 56,
+            listOf("George Munsey", "Brandon McMullen", "Matthew Cross", "Richie Berrington"),
+            listOf("Brad Wheal", "Mark Watt", "Safyaan Sharif", "Chris Sole")),
+        NationalTeam("Netherlands", 55,
+            listOf("Max O'Dowd", "Vikramjit Singh", "Bas de Leede", "Scott Edwards"),
+            listOf("Logan van Beek", "Paul van Meekeren", "Aryan Dutt", "Vivian Kingma")),
+        NationalTeam("Nepal", 52,
+            listOf("Rohit Paudel", "Kushal Bhurtel", "Aasif Sheikh", "Dipendra Singh Airee"),
+            listOf("Sandeep Lamichhane", "Karan KC", "Sompal Kami", "Lalit Rajbanshi")),
+        NationalTeam("USA", 50,
+            listOf("Monank Patel", "Aaron Jones", "Andries Gous", "Corey Anderson"),
+            listOf("Ali Khan", "Saurabh Netravalkar", "Nosthush Kenjige", "Jasdeep Singh")),
+        NationalTeam("UAE", 48,
+            listOf("Muhammad Waseem", "Alishan Sharafu", "Asif Khan", "Aryansh Sharma"),
+            listOf("Junaid Siddique", "Haider Ali", "Karthik Meiyappan", "Zahoor Khan"))
     )
 
     fun team(name: String): NationalTeam = teams.first { it.name == name }
@@ -148,13 +169,19 @@ object RealData {
         return if (local.isNotEmpty()) local.random(rng) else venues.random(rng)
     }
 
-    // ---- Overseas T20 leagues (window: end of year) ----
-    data class OverseasLeague(val name: String, val country: String, val fee: Long)
+    // ---- World T20 leagues (window: end of year). Browsable + used for overseas stints. ----
+    data class OverseasLeague(val name: String, val country: String, val fee: Long, val teams: Int, val tier: Int)
     val overseasLeagues = listOf(
-        OverseasLeague("Big Bash League", "Australia", 30_000_000),
-        OverseasLeague("Pakistan Super League", "Pakistan", 18_000_000),
-        OverseasLeague("The Hundred", "England", 35_000_000),
-        OverseasLeague("SA20", "South Africa", 25_000_000)
+        OverseasLeague("Big Bash League", "Australia", 30_000_000, 8, 1),
+        OverseasLeague("The Hundred", "England", 35_000_000, 8, 1),
+        OverseasLeague("SA20", "South Africa", 25_000_000, 6, 1),
+        OverseasLeague("Pakistan Super League", "Pakistan", 18_000_000, 6, 2),
+        OverseasLeague("Caribbean Premier League", "West Indies", 16_000_000, 6, 2),
+        OverseasLeague("International League T20", "UAE", 22_000_000, 6, 2),
+        OverseasLeague("Lanka Premier League", "Sri Lanka", 9_000_000, 5, 3),
+        OverseasLeague("Bangladesh Premier League", "Bangladesh", 8_000_000, 7, 3),
+        OverseasLeague("Major League Cricket", "USA", 20_000_000, 6, 2),
+        OverseasLeague("Global T20 Canada", "USA", 7_000_000, 6, 3)
     )
 
     // ---- Investment market ----

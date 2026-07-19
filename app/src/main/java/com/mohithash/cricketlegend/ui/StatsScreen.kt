@@ -241,16 +241,16 @@ private fun WorldDatabase(s: GameState) {
     var team by remember { mutableStateOf(s.country) }
     var view by remember { mutableIntStateOf(0) }  // 0 squads, 1 run leaders, 2 wicket leaders
 
-    SectionHeader("World Database")
-    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+    SectionHeader("World Database — ${com.mohithash.cricketlegend.data.PlayerDB.roster().size} players, ${RealData.teams.size} nations")
+    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
         modifier = Modifier.padding(bottom = 4.dp)) {
-        listOf("Squads", "Run Leaders", "Wicket Leaders").forEachIndexed { i, label ->
+        listOf("Squads", "Runs", "Wickets", "Leagues").forEachIndexed { i, label ->
             androidx.compose.material3.Button(
                 onClick = { view = i },
                 modifier = Modifier.weight(1f),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = if (view == i) PitchGreen else CardNavy),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp)
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(1.dp)
             ) { Text(label, fontSize = 10.sp, color = TextPrimary) }
         }
     }
@@ -303,7 +303,7 @@ private fun WorldDatabase(s: GameState) {
                 }
             }
         }
-        else -> InfoCard {
+        2 -> InfoCard {
             Text("Most International Wickets", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             com.mohithash.cricketlegend.engine.WorldSim.topWicketTakers(s, 15).forEachIndexed { i, (name, w) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
@@ -312,6 +312,22 @@ private fun WorldDatabase(s: GameState) {
                     Text("$w", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+        else -> InfoCard {
+            Text("Franchise T20 Leagues of the World", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                Text("Premier T20 League", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f))
+                Text("India · 10 teams · Tier 1", color = GoldAccent, fontSize = 10.sp)
+            }
+            com.mohithash.cricketlegend.data.RealData.overseasLeagues.forEach { lg ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Text(lg.name, color = TextPrimary, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text("${lg.country} · ${lg.teams} · T${lg.tier}", color = TextDim, fontSize = 10.sp)
+                }
+            }
+            Text("Chase overseas-league contracts via events after week 44 to play abroad.",
+                color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
