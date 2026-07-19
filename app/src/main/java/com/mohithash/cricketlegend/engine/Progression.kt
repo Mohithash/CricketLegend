@@ -73,11 +73,15 @@ object Progression {
         if (topScore >= 100 && fx.level != Level.DOMESTIC) s.fame = (s.fame + 2.0).coerceIn(0.0, 100.0)
         if (report.bowling.sumOf { it.wickets } >= 5 && fx.level != Level.DOMESTIC) s.fame = (s.fame + 2.0).coerceIn(0.0, 100.0)
 
-        // social following grows with every performance
+        // social following is hard-won: only strong performances move the needle, and it
+        // gets progressively harder to grow the bigger you already are (diminishing returns)
         val levelMult = when (fx.level) {
-            Level.INTERNATIONAL -> 1.0; Level.FRANCHISE -> 0.7; Level.DOMESTIC -> 0.12
+            Level.INTERNATIONAL -> 1.0; Level.FRANCHISE -> 0.55; Level.DOMESTIC -> 0.06
         }
-        s.followers += (s.fame * s.fame * 40 * (report.rating / 6.0) * levelMult).toLong()
+        if (report.rating >= 5.5) {
+            val perf = ((report.rating - 5.0) / 5.0).coerceIn(0.0, 1.0)
+            LifeSystems.gainFollowers(s, (s.fame * 55 * perf * levelMult).toLong())
+        }
 
         // nemesis tracking (international bowlers only)
         if (fx.level == Level.INTERNATIONAL) {
@@ -158,7 +162,7 @@ object Progression {
             s.milestonesSeen.add(id)
             s.fame = (s.fame + 2.0).coerceAtMost(100.0)
             s.morale = (s.morale + 4.0).coerceAtMost(100.0)
-            s.followers += 500_000
+            LifeSystems.gainFollowers(s, 60_000)
             s.addNews(msg)
         }
         if (fx.level == Level.INTERNATIONAL) {

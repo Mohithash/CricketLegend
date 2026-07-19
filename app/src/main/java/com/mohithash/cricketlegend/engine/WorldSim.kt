@@ -4,6 +4,7 @@ import com.mohithash.cricketlegend.data.RealData
 import com.mohithash.cricketlegend.model.DynRecord
 import com.mohithash.cricketlegend.model.GameState
 import com.mohithash.cricketlegend.model.RivalPlayer
+import com.mohithash.cricketlegend.model.StatKey
 import kotlin.random.Random
 
 /**
@@ -15,23 +16,8 @@ object WorldSim {
 
     fun seedRivals(s: GameState, rng: Random) {
         if (s.rivals.isNotEmpty()) return
-        // real young stars of the mid-2020s as your generation
-        val seeds = listOf(
-            RivalPlayer("Shubman Gill", "India", false, 88.0, 26),
-            RivalPlayer("Yashasvi Jaiswal", "India", false, 87.0, 24),
-            RivalPlayer("Harry Brook", "England", false, 86.0, 27),
-            RivalPlayer("Rachin Ravindra", "New Zealand", false, 84.0, 26),
-            RivalPlayer("Cameron Green", "Australia", false, 83.0, 27),
-            RivalPlayer("Tristan Stubbs", "South Africa", false, 82.0, 25),
-            RivalPlayer("Saim Ayub", "Pakistan", false, 81.0, 24),
-            RivalPlayer("Shamar Joseph", "West Indies", true, 83.0, 26),
-            RivalPlayer("Nahid Rana", "Bangladesh", true, 79.0, 23),
-            RivalPlayer("AM Ghazanfar", "Afghanistan", true, 80.0, 21),
-            RivalPlayer("Kamindu Mendis", "Sri Lanka", false, 84.0, 27),
-            RivalPlayer("Gus Atkinson", "England", true, 81.0, 28)
-        )
-        s.rivals.addAll(seeds)
-        repeat(8) { s.rivals.add(newDebutant(s, rng)) }
+        // full current-player database — the living world you compete against and can browse
+        s.rivals.addAll(com.mohithash.cricketlegend.data.PlayerDB.roster().map { it.copy() })
     }
 
     private fun newDebutant(s: GameState, rng: Random): RivalPlayer {
@@ -42,6 +28,40 @@ object WorldSim {
             skill = 68.0 + rng.nextDouble() * 16,
             age = 19 + rng.nextInt(3)
         )
+    }
+
+    // ---- browsable world (Cricket-Coach style) ----
+
+    /** All active players in a nation, best first — includes YOU if you play for it. */
+    fun squad(s: GameState, country: String): List<RivalPlayer> {
+        val list = s.rivals.filter { !it.retired && it.country == country }.toMutableList()
+        if (s.country == country && !s.retired) {
+            list.add(0, RivalPlayer(
+                name = "★ ${s.playerName}", country = country, isBowler = s.role.name == "BOWLER",
+                skill = maxOf(s.batting, s.bowling), age = s.age,
+                testRuns = s.stat(StatKey.INTL_TEST).runs, odiRuns = s.stat(StatKey.INTL_ODI).runs,
+                t20iRuns = s.stat(StatKey.INTL_T20).runs, testWkts = s.stat(StatKey.INTL_TEST).wickets,
+                odiWkts = s.stat(StatKey.INTL_ODI).wickets, t20iWkts = s.stat(StatKey.INTL_T20).wickets,
+                hundreds = s.intlHundreds, sixes = s.intlSixes, matches = s.intlMatches
+            ))
+        }
+        return list.sortedByDescending { it.skill }
+    }
+
+    fun nationsByStrength(): List<String> =
+        RealData.teams.sortedByDescending { it.strength }.map { it.name }
+
+    /** Global leaderboard of international run-scorers (rivals + you). */
+    fun topRunScorers(s: GameState, n: Int): List<Pair<String, Int>> {
+        val all = s.rivals.filter { it.intlRuns > 0 }.map { it.name to it.intlRuns }.toMutableList()
+        if (s.intlRuns > 0) all.add("★ ${s.playerName}" to s.intlRuns)
+        return all.sortedByDescending { it.second }.take(n)
+    }
+
+    fun topWicketTakers(s: GameState, n: Int): List<Pair<String, Int>> {
+        val all = s.rivals.filter { it.intlWkts > 0 }.map { it.name to it.intlWkts }.toMutableList()
+        if (s.intlWickets > 0) all.add("★ ${s.playerName}" to s.intlWickets)
+        return all.sortedByDescending { it.second }.take(n)
     }
 
     fun dynValue(s: GameState, id: String): Double =

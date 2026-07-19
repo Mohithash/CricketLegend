@@ -319,7 +319,7 @@ object Events {
         s.bowling = (s.bowling + e.bowlingDelta).coerceIn(1.0, 99.0)
         s.fitness = (s.fitness + e.fitnessDelta).coerceIn(20.0, 99.0)
         s.publicImage = (s.publicImage + e.image).coerceIn(-50.0, 50.0)
-        s.followers += e.followersGain
+        LifeSystems.gainFollowers(s, e.followersGain / 4)
         if (s.partner != null) s.relationship = (s.relationship + e.relationshipDelta).coerceIn(0.0, 100.0)
         if (e.injuryWeeks > 0) s.injuryWeeksLeft += e.injuryWeeks
 

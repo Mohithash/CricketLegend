@@ -78,7 +78,7 @@ object Tournaments {
         if (t.isLeague && fx.opponent == s.derbyRival) {
             if (report.won) {
                 s.fame = (s.fame + 2.0).coerceAtMost(100.0)
-                s.followers += 1_000_000
+                LifeSystems.gainFollowers(s, 120_000)
                 s.addNews("DERBY DELIGHT! Bragging rights over ${s.derbyRival} — the city is yours tonight.")
             } else {
                 s.morale = (s.morale - 3).coerceAtLeast(5.0)
@@ -174,7 +174,7 @@ object Tournaments {
                 if (fx.won == true) {
                     s.trophies.add(t.name)
                     s.fame = (s.fame + 10.0).coerceAtMost(100.0)
-                    s.followers += (s.fame * s.fame * 400).toLong()
+                    LifeSystems.gainFollowers(s, (s.fame * 4_000).toLong())
                     val prize = prizeFor(t.name)
                     Finance.credit(s, "${t.name} — WINNERS' prize", prize, taxable = true)
                     s.addNews("CHAMPIONS! ${t.playerTeam} win the ${t.name}!")

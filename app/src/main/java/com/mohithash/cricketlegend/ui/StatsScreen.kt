@@ -1,13 +1,17 @@
 package com.mohithash.cricketlegend.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -136,6 +140,7 @@ private fun HonoursTab(s: GameState) {
 
 @Composable
 private fun WorldTab(s: GameState) {
+    WorldDatabase(s)
     SectionHeader("ICC Player Rankings")
     InfoCard {
         val keys = listOf(StatKey.INTL_TEST, StatKey.INTL_ODI, StatKey.INTL_T20)
@@ -227,6 +232,86 @@ private fun LegacyTab(s: GameState) {
             Text("The grand moments of a legendary life will appear here.", color = TextDim, fontSize = 12.sp)
         s.lifeAchievements.reversed().forEach {
             AchievementBadge(com.mohithash.cricketlegend.engine.Legacy.achievementText(s, it))
+        }
+    }
+}
+
+@Composable
+private fun WorldDatabase(s: GameState) {
+    var team by remember { mutableStateOf(s.country) }
+    var view by remember { mutableIntStateOf(0) }  // 0 squads, 1 run leaders, 2 wicket leaders
+
+    SectionHeader("World Database")
+    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(bottom = 4.dp)) {
+        listOf("Squads", "Run Leaders", "Wicket Leaders").forEachIndexed { i, label ->
+            androidx.compose.material3.Button(
+                onClick = { view = i },
+                modifier = Modifier.weight(1f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = if (view == i) PitchGreen else CardNavy),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp)
+            ) { Text(label, fontSize = 10.sp, color = TextPrimary) }
+        }
+    }
+
+    when (view) {
+        0 -> {
+            // team picker (horizontally scrollable)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                com.mohithash.cricketlegend.engine.WorldSim.nationsByStrength().forEach { n ->
+                    androidx.compose.material3.Button(
+                        onClick = { team = n },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = if (team == n) GoldAccent else CardNavy),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(2.dp)
+                    ) { Text(n, fontSize = 10.sp, color = if (team == n) DeepNavy else TextPrimary) }
+                }
+            }
+            InfoCard {
+                val squad = com.mohithash.cricketlegend.engine.WorldSim.squad(s, team)
+                Text("$team squad", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Text("Player", color = TextDim, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                    Text("Age", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(30.dp))
+                    Text("Skill", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(34.dp))
+                    Text("Runs/Wkts", color = TextDim, fontSize = 10.sp, modifier = Modifier.width(64.dp))
+                }
+                squad.forEach { r ->
+                    val mine = r.name.startsWith("★")
+                    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+                        Text((if (r.isBowler) "🎯 " else "🏏 ") + r.name,
+                            color = if (mine) GoldAccent else TextPrimary, fontSize = 11.sp,
+                            fontWeight = if (mine) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1, modifier = Modifier.weight(1f))
+                        Text("${r.age}", color = TextDim, fontSize = 11.sp, modifier = Modifier.width(30.dp))
+                        Text("${r.skill.toInt()}", color = TextPrimary, fontSize = 11.sp, modifier = Modifier.width(34.dp))
+                        Text(if (r.isBowler) "${r.intlWkts}w" else "${r.intlRuns}",
+                            color = TextDim, fontSize = 11.sp, modifier = Modifier.width(64.dp))
+                    }
+                }
+            }
+        }
+        1 -> InfoCard {
+            Text("Most International Runs", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            com.mohithash.cricketlegend.engine.WorldSim.topRunScorers(s, 15).forEachIndexed { i, (name, runs) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+                    Text("${i + 1}. $name", color = if (name.startsWith("★")) GoldAccent else TextPrimary,
+                        fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text("$runs", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        else -> InfoCard {
+            Text("Most International Wickets", color = GoldAccent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            com.mohithash.cricketlegend.engine.WorldSim.topWicketTakers(s, 15).forEachIndexed { i, (name, w) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+                    Text("${i + 1}. $name", color = if (name.startsWith("★")) GoldAccent else TextPrimary,
+                        fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text("$w", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }

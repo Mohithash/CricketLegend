@@ -29,6 +29,25 @@ object LifeSystems {
 
     fun goatTier(score: Int): String = Progression.legacyTitle(score)
 
+    /**
+     * Adds followers with realistic diminishing returns — the bigger your account,
+     * the harder each new follower is to win. Stardom takes years, not weeks.
+     */
+    fun gainFollowers(s: GameState, base: Long) {
+        if (base <= 0) return
+        // above ~5M followers, growth slows sharply; above ~50M it crawls
+        val m = s.followers.toDouble()
+        val friction = when {
+            m < 1_000_000 -> 1.0
+            m < 5_000_000 -> 0.75
+            m < 20_000_000 -> 0.50
+            m < 50_000_000 -> 0.30
+            m < 100_000_000 -> 0.15
+            else -> 0.06
+        }
+        s.followers += (base * friction).toLong().coerceAtLeast(0)
+    }
+
     /** Earns a media nickname once the player has an identity worth naming. */
     fun updateNickname(s: GameState) {
         if (s.nickname.isNotEmpty()) return
@@ -132,7 +151,7 @@ object LifeSystems {
         s.partnerType = opt.type
         s.relationship = 65.0
         s.fame = (s.fame + opt.fameBoost).coerceAtMost(100.0)
-        s.followers += (opt.fameBoost * 400_000).toLong()
+        gainFollowers(s, (opt.fameBoost * 60_000).toLong())
         s.addNews("It's official: ${s.playerName} is dating ${s.partner}, a ${opt.type.lowercase()}.")
         return true
     }

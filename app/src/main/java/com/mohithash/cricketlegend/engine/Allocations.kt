@@ -52,15 +52,16 @@ object Allocations {
         if (weeks <= 0) return
         val w = weeks.toDouble()
 
-        // PR & social — grows followers, fame and public image continuously
+        // PR & social — helps, but can't manufacture stardom; on-field fame drives most of it
         val pr = level(s, "pr")
         if (pr > 0) {
-            s.followers += (pr * w * (30_000 + s.fame * 6_000)).toLong()
-            s.fame = (s.fame + pr * w * 0.15).coerceAtMost(100.0)
-            s.publicImage = (s.publicImage + pr * w * 0.20).coerceIn(-50.0, 50.0)
+            // a media team amplifies a following you're already earning; modest on its own
+            LifeSystems.gainFollowers(s, (pr * w * (800 + s.fame * 220)).toLong())
+            s.fame = (s.fame + pr * w * 0.08).coerceAtMost(100.0)
+            s.publicImage = (s.publicImage + pr * w * 0.12).coerceIn(-50.0, 50.0)
         } else {
             // neglect it and you slowly fade from the public eye
-            s.followers = (s.followers * (1.0 - 0.002 * w)).toLong()
+            s.followers = (s.followers * (1.0 - 0.003 * w)).toLong()
         }
 
         // lifestyle — morale upkeep
