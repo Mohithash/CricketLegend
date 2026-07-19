@@ -155,6 +155,23 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
                         Text("Injured — out ${s.injuryWeeksLeft} more week(s); playing will skip fixtures.",
                             color = LossRed, fontSize = 12.sp)
                     }
+
+                    // immersive build-up
+                    val preview = com.mohithash.cricketlegend.engine.MatchPreview.build(s, fx)
+                    Spacer(Modifier.height(8.dp))
+                    preview.lines.forEach {
+                        Text("• $it", color = TextDim, fontSize = 11.sp,
+                            modifier = Modifier.padding(vertical = 1.dp))
+                    }
+                    preview.warning?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(it, color = LossRed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    preview.stakes?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(it, color = GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
                     Spacer(Modifier.height(10.dp))
                     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
                     Button(
