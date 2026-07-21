@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,6 +175,7 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
 
                     Spacer(Modifier.height(10.dp))
                     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+                    val glow = if (s.pendingEvent == null) pulseAlpha(0.75f, 1f) else 1f
                     Button(
                         onClick = {
                             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
@@ -181,12 +183,13 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .height(50.dp)
+                            .alpha(glow),
                         colors = ButtonDefaults.buttonColors(containerColor = PitchGreen),
                         shape = RoundedCornerShape(10.dp),
                         enabled = s.pendingEvent == null
                     ) {
-                        Text("PLAY MATCH", fontWeight = FontWeight.Black, color = TextPrimary)
+                        Text("▶  PLAY MATCH", fontWeight = FontWeight.Black, color = TextPrimary, fontSize = 16.sp)
                     }
                     Spacer(Modifier.height(6.dp))
                     OutlinedButton(

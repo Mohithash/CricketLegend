@@ -157,7 +157,7 @@ fun HeroHeader(
         Modifier
             .fillMaxWidth()
             .background(
-                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(HeroTop, HeroBottom)),
+                shimmerBrush(listOf(HeroTop, HeroBottom, Color(0xFF243B57), HeroBottom)),
                 RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             )
             .padding(horizontal = 16.dp, vertical = 16.dp)
@@ -205,16 +205,18 @@ private fun initials(name: String): String {
     }
 }
 
-/** Compact metric tile for dashboard grids. */
+/** Compact metric tile for dashboard grids. Pure-integer values count up smoothly. */
 @Composable
 fun StatTile(label: String, value: String, accent: Color = GoldAccent, modifier: Modifier = Modifier) {
+    val asInt = value.toIntOrNull()
+    val shown = if (asInt != null) "${rememberAnimatedInt(asInt)}" else value
     Column(
         modifier
             .background(TileBg, RoundedCornerShape(14.dp))
             .padding(vertical = 12.dp, horizontal = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, color = accent, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
+        Text(shown, color = accent, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
         Text(label, color = TextDim, fontSize = 10.sp, maxLines = 1)
     }
 }

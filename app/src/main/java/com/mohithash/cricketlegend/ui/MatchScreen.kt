@@ -26,8 +26,19 @@ import com.mohithash.cricketlegend.model.GameState
 @Composable
 fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
     val r = s.lastReport
+    // celebrate the big moments with a confetti burst
+    val celebrate: Any? = r?.let {
+        val ton = it.batting.any { b -> b.runs >= 100 }
+        when {
+            it.recordsBroken.isNotEmpty() -> "record${it.fixtureId}"
+            it.manOfTheMatch && it.won -> "motm${it.fixtureId}"
+            ton && it.won -> "ton${it.fixtureId}"
+            else -> null
+        }
+    }
+    androidx.compose.foundation.layout.Box(modifier.fillMaxSize()) {
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
@@ -230,5 +241,8 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
             }
         }
         Spacer(Modifier.height(20.dp))
+    }
+        // celebratory burst on top of everything
+        ConfettiOverlay(trigger = celebrate)
     }
 }

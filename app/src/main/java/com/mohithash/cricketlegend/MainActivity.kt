@@ -93,12 +93,18 @@ private fun Root() {
         }
     ) { padding ->
         val mod = Modifier.padding(padding)
-        when (Game.selectedTab) {
-            0 -> HomeScreen(state, mod)
-            1 -> MatchScreen(state, mod)
-            2 -> StatsScreen(state, mod)
-            3 -> MoneyScreen(state, mod)
-            else -> LifeScreen(state, mod)
+        androidx.compose.animation.Crossfade(
+            targetState = Game.selectedTab,
+            animationSpec = androidx.compose.animation.core.tween(280),
+            label = "tab"
+        ) { tab ->
+            when (tab) {
+                0 -> HomeScreen(state, mod)
+                1 -> MatchScreen(state, mod)
+                2 -> StatsScreen(state, mod)
+                3 -> MoneyScreen(state, mod)
+                else -> LifeScreen(state, mod)
+            }
         }
 
         // Global action feedback toast — every tap answers back
