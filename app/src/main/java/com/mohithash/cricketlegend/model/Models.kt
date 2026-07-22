@@ -257,6 +257,49 @@ data class BowlingLine(
 }
 
 @Serializable
+data class CardBat(
+    val name: String,
+    val runs: Int,
+    val balls: Int,
+    val fours: Int,
+    val sixes: Int,
+    val out: Boolean,
+    val how: String,
+    val isPlayer: Boolean = false
+)
+
+@Serializable
+data class CardBowl(
+    val name: String,
+    val balls: Int,
+    val maidens: Int,
+    val runs: Int,
+    val wickets: Int,
+    val isPlayer: Boolean = false
+) {
+    val oversText: String get() = "${balls / 6}.${balls % 6}"
+    val econ: Double get() = if (balls > 0) runs * 6.0 / balls else 0.0
+}
+
+@Serializable
+data class InningsCard(
+    val teamName: String,
+    val total: Int,
+    val wickets: Int,
+    val oversText: String,
+    val batting: List<CardBat>,
+    val bowling: List<CardBowl>
+)
+
+@Serializable
+data class FullScorecard(
+    val playerTeam: String,
+    val opponent: String,
+    val first: InningsCard,
+    val second: InningsCard
+)
+
+@Serializable
 data class MatchReport(
     val fixtureId: Int,
     val title: String,
@@ -279,7 +322,8 @@ data class MatchReport(
     val pitch: String = "BALANCED",
     val tossText: String = "",
     val headline: String? = null,
-    val keyMoment: List<String> = emptyList()
+    val keyMoment: List<String> = emptyList(),
+    val scorecard: FullScorecard? = null
 )
 
 @Serializable

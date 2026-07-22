@@ -97,6 +97,26 @@ class LiveWorldTest {
     }
 
     @Test
+    fun scorecardIsCompleteAndConsistent() {
+        val rng = Random(31)
+        val s = GameState(country = "India", role = Role.ALL_ROUNDER, batting = 78.0, bowling = 70.0,
+            inNationalTest = true, inNationalODI = true, inNationalT20 = true)
+        val fx = Fixture(1, 20, Format.T20, Level.INTERNATIONAL, StatKey.INTL_T20, "Australia",
+            venue = "MCG", pitch = "FLAT")
+        val r = MatchEngine.simulate(s, fx, rng)
+        val card = r.scorecard!!
+        // both innings must field 11 batters and have bowlers
+        assertTrue("first innings 11 batters", card.first.batting.size == 11)
+        assertTrue("second innings 11 batters", card.second.batting.size == 11)
+        assertTrue("bowlers present", card.first.bowling.isNotEmpty() && card.second.bowling.isNotEmpty())
+        // batting totals should be within a run or two of the innings total (rounding)
+        val sum1 = card.first.batting.sumOf { it.runs }
+        assertTrue("batting sums to total ($sum1 vs ${card.first.total})", kotlin.math.abs(sum1 - card.first.total) <= 3)
+        // the player appears exactly once with a ★
+        assertTrue("player on card", card.first.batting.count { it.isPlayer } == 1)
+    }
+
+    @Test
     fun splitStatsAreTracked() {
         val rng = Random(21)
         val s = GameState(country = "India", role = Role.BATTER, batting = 80.0,

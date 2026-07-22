@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -282,18 +283,24 @@ fun BudgetSlider(
     country: String,
     onChange: (Long) -> Unit
 ) {
+    // drag locally (smooth, no global state thrash) and commit once on release
+    var pos by androidx.compose.runtime.remember(value) {
+        androidx.compose.runtime.mutableFloatStateOf(value.toFloat())
+    }
+    val shown = pos.toLong()
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("$emoji $label", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f))
             Text(
-                if (value <= 0) "off" else com.mohithash.cricketlegend.engine.Money.fmt(value, country) + "/wk",
-                color = if (value <= 0) TextDim else GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                if (shown <= 0) "off" else com.mohithash.cricketlegend.engine.Money.fmt(shown, country) + "/wk",
+                color = if (shown <= 0) TextDim else GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold
             )
         }
         androidx.compose.material3.Slider(
-            value = value.toFloat(),
-            onValueChange = { onChange(it.toLong()) },
+            value = pos,
+            onValueChange = { pos = it },
+            onValueChangeFinished = { onChange(pos.toLong()) },
             valueRange = 0f..max.toFloat(),
             steps = 9,
             colors = androidx.compose.material3.SliderDefaults.colors(

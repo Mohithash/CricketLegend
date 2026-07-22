@@ -1,6 +1,8 @@
 package com.mohithash.cricketlegend.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +17,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +42,7 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
             else -> null
         }
     }
+    var selectedPlayer by remember { mutableStateOf<String?>(null) }
     androidx.compose.foundation.layout.Box(modifier.fillMaxSize()) {
     Column(
         Modifier
@@ -144,6 +151,12 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
             }
         }
 
+        r.scorecard?.let { card ->
+            SectionHeader("Full Scorecard — tap any player")
+            InningsCardView(card.first) { selectedPlayer = it }
+            InningsCardView(card.second) { selectedPlayer = it }
+        }
+
         if (r.keyMoment.isNotEmpty()) {
             SectionHeader("Key Moment — The Last Over")
             InfoCard {
@@ -245,4 +258,87 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
         // celebratory burst on top of everything
         ConfettiOverlay(trigger = celebrate)
     }
+
+    selectedPlayer?.let { name ->
+        PlayerStatDialog(s, name) { selectedPlayer = null }
+    }
+}
+
+@Composable
+private fun InningsCardView(inns: com.mohithash.cricketlegend.model.InningsCard, onPlayer: (String) -> Unit) {
+    InfoCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(inns.teamName, color = GoldAccent, fontWeight = FontWeight.Black, fontSize = 15.sp)
+            Text("${inns.total}/${inns.wickets}  (${inns.oversText})", color = TextPrimary,
+                fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(Modifier.fillMaxWidth()) {
+            Text("Batter", color = TextDim, fontSize = 9.sp, modifier = Modifier.weight(1f))
+            Text("R", color = TextDim, fontSize = 9.sp, modifier = Modifier.width(30.dp))
+            Text("B", color = TextDim, fontSize = 9.sp, modifier = Modifier.width(28.dp))
+            Text("4s/6s", color = TextDim, fontSize = 9.sp, modifier = Modifier.width(40.dp))
+        }
+        inns.batting.forEach { b ->
+            Row(Modifier.fillMaxWidth()
+                .clickable { onPlayer(b.name.removePrefix("★ ")) }
+                .padding(vertical = 2.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(b.name, color = if (b.isPlayer) GoldAccent else TextPrimary, fontSize = 11.sp,
+                        fontWeight = if (b.isPlayer) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+                    Text(b.how, color = TextDim, fontSize = 9.sp, maxLines = 1)
+                }
+                Text("${b.runs}${if (!b.out) "*" else ""}", color = TextPrimary, fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold, modifier = Modifier.width(30.dp))
+                Text("${b.balls}", color = TextDim, fontSize = 11.sp, modifier = Modifier.width(28.dp))
+                Text("${b.fours}/${b.sixes}", color = TextDim, fontSize = 11.sp, modifier = Modifier.width(40.dp))
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text("Bowling", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        inns.bowling.forEach { bw ->
+            Row(Modifier.fillMaxWidth()
+                .clickable { onPlayer(bw.name.removePrefix("★ ")) }
+                .padding(vertical = 1.dp)) {
+                Text(bw.name, color = if (bw.isPlayer) GoldAccent else TextPrimary, fontSize = 11.sp,
+                    fontWeight = if (bw.isPlayer) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1, modifier = Modifier.weight(1f))
+                Text("${bw.oversText}-${bw.maidens}-${bw.runs}-${bw.wickets}", color = TextDim, fontSize = 11.sp)
+                Text("  %.1f".format(bw.econ), color = TextDim, fontSize = 10.sp, modifier = Modifier.width(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerStatDialog(s: GameState, name: String, onClose: () -> Unit) {
+    val rival = com.mohithash.cricketlegend.data.PlayerDB.roster().firstOrNull { it.name == name }
+        ?: s.rivals.firstOrNull { it.name == name }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onClose,
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onClose) { Text("Close", color = GoldAccent) }
+        },
+        title = { Text(name, fontWeight = FontWeight.Black, color = GoldAccent) },
+        text = {
+            Column {
+                if (rival != null) {
+                    Text("${rival.country} · ${if (rival.isBowler) "Bowler" else "Batter"} · Age ${rival.age} · Skill ${rival.skill.toInt()}",
+                        color = TextDim, fontSize = 12.sp)
+                    Spacer(Modifier.height(6.dp))
+                    KeyValueRow("Test runs / wkts", "${rival.testRuns} / ${rival.testWkts}")
+                    KeyValueRow("ODI runs / wkts", "${rival.odiRuns} / ${rival.odiWkts}")
+                    KeyValueRow("T20I runs / wkts", "${rival.t20iRuns} / ${rival.t20iWkts}")
+                    KeyValueRow("Intl 100s / sixes", "${rival.hundreds} / ${rival.sixes}")
+                    KeyValueRow("Career matches", "${rival.matches}", GoldAccent)
+                    KeyValueRow("Franchise-league runs", "${rival.leagueRuns}")
+                } else if (name == s.playerName || name.contains(s.playerName)) {
+                    Text("That's you! See the Career tab for your full statistics.", color = TextPrimary, fontSize = 13.sp)
+                } else {
+                    Text("A domestic / uncapped player — no international record on file yet.",
+                        color = TextDim, fontSize = 13.sp)
+                }
+            }
+        }
+    )
 }
