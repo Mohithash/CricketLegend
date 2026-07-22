@@ -175,7 +175,6 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
 
                     Spacer(Modifier.height(10.dp))
                     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-                    val glow = if (s.pendingEvent == null) pulseAlpha(0.75f, 1f) else 1f
                     Button(
                         onClick = {
                             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
@@ -183,8 +182,7 @@ fun HomeScreen(s: GameState, modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
-                            .alpha(glow),
+                            .height(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PitchGreen),
                         shape = RoundedCornerShape(10.dp),
                         enabled = s.pendingEvent == null
