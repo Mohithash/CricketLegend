@@ -93,9 +93,12 @@ private fun Root() {
         }
     ) { padding ->
         val mod = Modifier.padding(padding)
-        // NOTE: keep this a direct switch — a Crossfade here composes tab content in a
-        // scope that doesn't re-read Game.version, so screens stopped updating after actions.
-        when (Game.selectedTab) {
+        // IMPORTANT: read Game.version INSIDE this (the Scaffold content) scope, not just at
+        // the top of Root. State is mutated in place, so the only recompose trigger is this
+        // counter. Reading it here subscribes this scope so actions that keep the same tab
+        // (e.g. Play Next Match on the Match tab) still re-render. Do NOT wrap in Crossfade.
+        val ver = Game.version
+        if (ver >= 0) when (Game.selectedTab) {
             0 -> HomeScreen(state, mod)
             1 -> MatchScreen(state, mod)
             2 -> StatsScreen(state, mod)
