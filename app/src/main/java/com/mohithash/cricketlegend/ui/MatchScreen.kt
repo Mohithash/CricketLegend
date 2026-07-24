@@ -87,13 +87,13 @@ fun MatchScreen(s: GameState, modifier: Modifier = Modifier) {
                 horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
             ) {
                 Text(if (r.won) "🏆 VICTORY" else "DEFEAT",
-                    color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                    color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
                 if (r.recordsBroken.isNotEmpty()) {
                     Text("🎉 ${r.recordsBroken.size} WORLD RECORD${if (r.recordsBroken.size > 1) "S" else ""} BROKEN 🎉",
-                        color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 if (r.manOfTheMatch) {
-                    Text("⭐ Player of the Match", color = TextPrimary, fontSize = 12.sp)
+                    Text("⭐ Player of the Match", color = androidx.compose.ui.graphics.Color.White, fontSize = 12.sp)
                 }
             }
         }

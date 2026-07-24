@@ -36,11 +36,11 @@ object TeamMatchSim {
         return xi
     }
 
-    /** Batting order: openers/top from BAT+WK by rating, AR middle, bowlers last. */
+    /** Batting order: ability-weighted — a good all-rounder bats above a weak batter. */
     private fun battingOrder(xi: List<SquadPlayer>): List<SquadPlayer> =
-        xi.sortedWith(compareBy({ roleOrder(it.role) }, { -it.rating }))
-
-    private fun roleOrder(r: String) = when (r) { "BAT" -> 0; "WK" -> 0; "AR" -> 1; else -> 2 }
+        xi.sortedByDescending {
+            it.rating + when (it.role) { "BAT", "WK" -> 8; "AR" -> 0; else -> -25 }
+        }
 
     private fun bowlingAttack(xi: List<SquadPlayer>): List<SquadPlayer> {
         val front = xi.filter { it.role == "BOWL" || it.role == "AR" }.sortedByDescending { it.rating }
@@ -68,7 +68,10 @@ object TeamMatchSim {
             val sr = (0.7 + eff / 90.0 + rng.nextDouble() * 0.5)
             var runs = (faced * sr).toInt()
             val out = rng.nextDouble() < (0.85 - eff / 300.0) || wkts >= 9
-            if (target != null && total + runs > target + 6) runs = (target + 1 - total).coerceAtLeast(0) + rng.nextInt(6)
+            // a chase ends the ball the target falls — never bat on past victory
+            if (target != null && total + runs > target) {
+                runs = (target - total + 1 + rng.nextInt(5)).coerceAtLeast(1)
+            }
             total += runs; balls += faced
             val bIdx = rng.nextInt(attack.size)
             if (out) { wkts++; bowlWkts[bIdx]++ }

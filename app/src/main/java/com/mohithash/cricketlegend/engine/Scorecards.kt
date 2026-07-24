@@ -84,12 +84,16 @@ object Scorecards {
         val playerRuns = playerLine?.runs ?: 0
         if (playerLine != null) remaining -= playerRuns
 
-        // distribute remaining runs across the other batters (11 total incl. player if present)
-        val others = if (playerLine != null) 10 else 11
+        // only (wickets + 2) batters actually bat in a limited-overs innings —
+        // an unbeaten chase does NOT see the whole XI stroll out
+        val playerSlot = if (playerLine != null) (playerPos - 1).coerceIn(0, 10) else -1
+        val batCount = if (fx.format == Format.FIRST_CLASS) 11
+            else (wkts + 2).coerceIn(2, 11).coerceAtLeast(playerSlot + 1)
+
+        val others = (batCount - (if (playerLine != null) 1 else 0)).coerceAtLeast(1)
         val weights = DoubleArray(others) { 0.3 + rng.nextDouble() }
         val wsum = weights.sum()
         val runsEach = IntArray(others) { (remaining * weights[it] / wsum).toInt() }
-        // fix rounding
         var diff = remaining - runsEach.sum()
         var idx = 0
         while (diff != 0 && others > 0) {
@@ -100,22 +104,23 @@ object Scorecards {
 
         var wktsLeft = wkts
         val pool = names.toMutableList()
-        // insert the player's card at THEIR chosen batting position (1-based -> 0-based)
-        val insertAt = if (playerLine != null) (playerPos - 1).coerceIn(0, 10) else -1
-
         for (i in 0 until 11) {
-            if (i == insertAt && playerLine != null) {
+            if (i == playerSlot && playerLine != null) {
                 out.add(CardBat("★ $playerName", playerRuns, playerLine.balls, playerLine.fours,
                     playerLine.sixes, playerLine.out, playerLine.dismissal, isPlayer = true))
                 continue
             }
             val oi = out.count { !it.isPlayer }
+            val name = pool.getOrElse(oi) { RealData.randomName("India") }
+            if (i >= batCount) {
+                out.add(CardBat(name, 0, 0, 0, 0, false, "did not bat"))
+                continue
+            }
             if (oi >= others) break
             val runs = runsEach[oi].coerceAtLeast(0)
             val balls = ballsFor(runs, fx, rng)
-            val outNow = wktsLeft > 0 && (i < 8 || runs == 0 || rng.nextDouble() < 0.7)
+            val outNow = wktsLeft > 0 && (i < batCount - 2 || rng.nextDouble() < 0.6)
             if (outNow) wktsLeft--
-            val name = pool.getOrElse(oi) { RealData.randomName("India") }
             out.add(CardBat(name, runs, balls, runs / 8 + rng.nextInt(2),
                 if (fx.format == Format.T20) runs / 20 else runs / 40,
                 outNow, if (outNow) dismissal(rng) else "not out"))
@@ -154,13 +159,18 @@ object Scorecards {
         wktsLeft = wktsLeft.coerceAtLeast(0)
         ballsLeft = ballsLeft.coerceAtLeast(0)
 
+        // legal per-bowler quota: 4 overs in T20, 10 in ODI (FC effectively uncapped)
+        val quota = when (fx.format) {
+            Format.T20 -> 24; Format.ODI -> 60; Format.FIRST_CLASS -> 200
+        }
         val n = (bowlerCount - out.size).coerceAtLeast(1)
         for (i in 0 until n) {
             val remBowlers = (n - i)
             val share = if (i == n - 1) ballsLeft else (ballsLeft / remBowlers)
-            val balls = share.coerceIn(0, ballsLeft)
+            // never exceed the format's legal quota — no more 8.2-over spells
+            val balls = share.coerceIn(0, minOf(ballsLeft, quota))
             ballsLeft = (ballsLeft - balls).coerceAtLeast(0)
-            val w = if (i == n - 1) wktsLeft else (0..wktsLeft).random(rng).coerceAtMost(3)
+            val w = if (i == n - 1) wktsLeft.coerceAtMost(5) else (0..wktsLeft).random(rng).coerceAtMost(3)
             wktsLeft = (wktsLeft - w).coerceAtLeast(0)
             val runs = if (i == n - 1) runsLeft
             else (runsLeft.toDouble() * (0.5 + rng.nextDouble() * 0.5) / remBowlers).toInt().coerceIn(0, runsLeft)

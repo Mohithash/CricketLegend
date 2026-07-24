@@ -105,9 +105,9 @@ private fun Root() {
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
                         label = { Text(tab.label, fontSize = 11.sp) },
                         colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                            selectedIconColor = com.mohithash.cricketlegend.ui.DeepNavy,
-                            selectedTextColor = com.mohithash.cricketlegend.ui.GoldAccent,
-                            indicatorColor = com.mohithash.cricketlegend.ui.GoldAccent,
+                            selectedIconColor = androidx.compose.ui.graphics.Color.White,
+                            selectedTextColor = com.mohithash.cricketlegend.ui.PitchGreen,
+                            indicatorColor = com.mohithash.cricketlegend.ui.PitchGreen,
                             unselectedIconColor = com.mohithash.cricketlegend.ui.TextDim,
                             unselectedTextColor = com.mohithash.cricketlegend.ui.TextDim
                         )

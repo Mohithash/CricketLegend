@@ -56,17 +56,14 @@ fun SectionHeader(text: String) {
 
 @Composable
 fun InfoCard(content: @Composable () -> Unit) {
-    Box(
-        Modifier
+    androidx.compose.material3.Surface(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp)
-            .background(
-                androidx.compose.ui.graphics.Brush.verticalGradient(
-                    listOf(CardNavy, CardNavy.copy(alpha = 0.86f))
-                ),
-                RoundedCornerShape(16.dp)
-            )
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .padding(vertical = 5.dp),
+        color = CardSurface,
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 2.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(Modifier.padding(15.dp)) { content() }
     }
@@ -104,9 +101,9 @@ fun SkillBar(label: String, value: Double, max: Double = 100.0, color: Color = P
             modifier = Modifier
                 .fillMaxWidth()
                 .height(7.dp)
-                .background(DeepNavy, RoundedCornerShape(4.dp)),
+                .background(TileBg, RoundedCornerShape(4.dp)),
             color = color,
-            trackColor = DeepNavy
+            trackColor = TileBg
         )
     }
 }
@@ -180,18 +177,22 @@ fun HeroHeader(
         Modifier
             .fillMaxWidth()
             .background(
-                shimmerBrush(listOf(HeroTop, HeroBottom, Color(0xFF243B57), HeroBottom)),
-                RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
+                shimmerBrush(listOf(HeroTop, HeroBottom, Color(0xFF11724F), HeroBottom)),
+                RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
             )
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 18.dp)
     ) {
+        // hero band is deep turf green — text on it is always light
+        val heroText = Color.White
+        val heroDim = Color(0xCCE9F2ED)
+        val heroGold = Color(0xFFFFCF6A)
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 androidx.compose.foundation.layout.Box(
                     Modifier
                         .size(52.dp)
                         .background(
-                            androidx.compose.ui.graphics.Brush.linearGradient(listOf(GoldAccent, GoldDeep)),
+                            androidx.compose.ui.graphics.Brush.linearGradient(listOf(heroGold, GoldDeep)),
                             androidx.compose.foundation.shape.CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -200,11 +201,11 @@ fun HeroHeader(
                 }
                 androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(name, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                    Text(subtitle, color = TextDim, fontSize = 12.sp)
-                    Text(status, color = GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(name, color = heroText, fontSize = 20.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    Text(subtitle, color = heroDim, fontSize = 12.sp)
+                    Text(status, color = heroGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
-                Text(rightValue, color = GoldAccent, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                Text(rightValue, color = heroGold, fontSize = 15.sp, fontWeight = FontWeight.Black)
             }
             if (chips.isNotEmpty()) {
                 androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
