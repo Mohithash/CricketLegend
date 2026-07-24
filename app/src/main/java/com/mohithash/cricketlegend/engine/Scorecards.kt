@@ -30,15 +30,15 @@ object Scorecards {
         val teammates = squadNames(s, fx, own = true, rng)
         val opponents = squadNames(s, fx, own = false, rng)
 
-        // your team innings (contains YOU) + opposition bowling
-        val teamBat = buildBatting(teamTotal, teamWkts, teammates, playerBat, s.playerName, fx, rng)
+        // your team innings (contains YOU at your chosen batting position) + opposition bowling
+        val teamBat = buildBatting(teamTotal, teamWkts, teammates, playerBat, s.playerName, fx, rng, s.battingPosition)
         val oppBowl = buildBowling(teamTotal, teamWkts, opponents, null, "", fx, rng)
         val teamInns = InningsCard(playerTeamName, teamTotal, teamBat.count { it.out },
             oversText(fx, teamTotal), teamBat, oppBowl)
 
         // opposition innings + your team bowling (contains YOU if you bowl)
         val oppWkts = (6 + rng.nextInt(5)).coerceAtMost(10)
-        val oppBat = buildBatting(oppTotal, oppWkts, opponents, null, "", fx, rng)
+        val oppBat = buildBatting(oppTotal, oppWkts, opponents, null, "", fx, rng, 3)
         val teamBowl = buildBowling(oppTotal, oppWkts, teammates, playerBowl, s.playerName, fx, rng)
         val oppInns = InningsCard(fx.opponent, oppTotal, oppWkts,
             oversText(fx, oppTotal), oppBat, teamBowl)
@@ -72,7 +72,7 @@ object Scorecards {
 
     private fun buildBatting(
         total: Int, wkts: Int, names: List<String>,
-        playerLine: BattingLine?, playerName: String, fx: Fixture, rng: Random
+        playerLine: BattingLine?, playerName: String, fx: Fixture, rng: Random, playerPos: Int
     ): List<CardBat> {
         val out = ArrayList<CardBat>()
         var remaining = total
@@ -95,8 +95,8 @@ object Scorecards {
 
         var wktsLeft = wkts
         val pool = names.toMutableList()
-        // insert player's card at a plausible position (top order)
-        val insertAt = (playerLine != null).let { if (it) 2 else -1 }
+        // insert the player's card at THEIR chosen batting position (1-based -> 0-based)
+        val insertAt = if (playerLine != null) (playerPos - 1).coerceIn(0, 10) else -1
 
         for (i in 0 until 11) {
             if (i == insertAt && playerLine != null) {
