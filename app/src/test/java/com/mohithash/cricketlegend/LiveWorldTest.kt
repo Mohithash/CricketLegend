@@ -112,8 +112,9 @@ class LiveWorldTest {
         // batting totals should be within a run or two of the innings total (rounding)
         val sum1 = card.first.batting.sumOf { it.runs }
         assertTrue("batting sums to total ($sum1 vs ${card.first.total})", kotlin.math.abs(sum1 - card.first.total) <= 3)
-        // the player appears exactly once with a ★
-        assertTrue("player on card", card.first.batting.count { it.isPlayer } == 1)
+        // the player appears exactly once across the two innings (order depends on who batted first)
+        val playerSlots = card.first.batting.count { it.isPlayer } + card.second.batting.count { it.isPlayer }
+        assertTrue("player on card exactly once", playerSlots == 1)
     }
 
     @Test

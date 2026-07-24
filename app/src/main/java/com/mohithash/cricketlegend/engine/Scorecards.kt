@@ -24,7 +24,8 @@ object Scorecards {
     fun build(
         s: GameState, fx: Fixture,
         playerBat: BattingLine?, playerBowl: BowlingLine?,
-        teamTotal: Int, teamWkts: Int, oppTotal: Int, rng: Random
+        teamTotal: Int, teamWkts: Int, oppTotal: Int, rng: Random,
+        playerBattedFirst: Boolean = true
     ): FullScorecard {
         val playerTeamName = teamName(s, fx)
         val teammates = squadNames(s, fx, own = true, rng)
@@ -43,7 +44,11 @@ object Scorecards {
         val oppInns = InningsCard(fx.opponent, oppTotal, oppWkts,
             oversText(fx, oppTotal), oppBat, teamBowl)
 
-        return FullScorecard(playerTeamName, fx.opponent, teamInns, oppInns)
+        // order the innings by who actually batted first
+        return if (playerBattedFirst)
+            FullScorecard(playerTeamName, fx.opponent, teamInns, oppInns)
+        else
+            FullScorecard(playerTeamName, fx.opponent, oppInns, teamInns)
     }
 
     private fun teamName(s: GameState, fx: Fixture): String = when (fx.level) {

@@ -102,20 +102,24 @@ object MatchEngine {
         val (teamScore, oppScore) = buildScores(fx.format, totalRuns, won, rng)
         val commentary = commentary(s, fx, battingFinal, bowling, totalWickets, won, motm, rng)
 
+        // in limited-overs the winner usually chased (buildScores models the win as a chase);
+        // in FC we treat your side as batting first. Toss text + scorecard order follow this.
+        val playerBattedFirst = if (fx.format == Format.FIRST_CLASS) true else !won
+
         // full 11-a-side scorecard, consistent with the totals just computed
         fun firstInt(t: String) = Regex("\\d+").find(t)?.value?.toInt() ?: 0
         fun secondInt(t: String) = Regex("\\d+").findAll(t).elementAtOrNull(1)?.value?.toIntOrNull() ?: 6
         val scorecard = Scorecards.build(
             s, fx, battingFinal.firstOrNull(), bowling.firstOrNull(),
             teamTotal = firstInt(teamScore), teamWkts = secondInt(teamScore).coerceIn(0, 10),
-            oppTotal = firstInt(oppScore), rng = rng
+            oppTotal = firstInt(oppScore), rng = rng, playerBattedFirst = playerBattedFirst
         )
 
         val stageTag = fx.stage?.let { " — ${it.label}" } ?: ""
         val title = (fx.tournament?.plus(stageTag) ?: "${fx.format.label} vs ${fx.opponent}")
 
-        val tossWinner = if (rng.nextBoolean()) "Your side" else fx.opponent
-        val tossText = "$tossWinner won the toss and chose to ${if (rng.nextBoolean()) "bat" else "bowl"} first"
+        val tossText = if (playerBattedFirst) "Your side batted first"
+            else "${fx.opponent} batted first; you chased"
 
         val best = battingFinal.maxByOrNull { it.runs }
         val headline = when {
