@@ -46,7 +46,7 @@ fun AuctionScreen(s: GameState, a: AuctionState) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(androidx.compose.ui.graphics.Color.Transparent)
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {

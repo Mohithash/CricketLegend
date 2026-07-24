@@ -1,7 +1,9 @@
 package com.mohithash.cricketlegend.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,25 +30,45 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun SectionHeader(text: String) {
-    Text(
-        text,
-        color = GoldAccent,
-        fontWeight = FontWeight.Bold,
-        fontSize = 15.sp,
-        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp)
-    )
+    Row(
+        Modifier.padding(top = 18.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // broadcast-style accent bar
+        Box(
+            Modifier
+                .size(width = 4.dp, height = 15.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(listOf(GoldAccent, Teal)),
+                    RoundedCornerShape(2.dp)
+                )
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text.uppercase(),
+            color = TextPrimary,
+            fontWeight = FontWeight.Black,
+            fontSize = 13.sp,
+            letterSpacing = 1.2.sp
+        )
+    }
 }
 
 @Composable
 fun InfoCard(content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier
+    Box(
+        Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = CardNavy),
-        shape = RoundedCornerShape(14.dp)
+            .padding(vertical = 5.dp)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(CardNavy, CardNavy.copy(alpha = 0.86f))
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
     ) {
-        Column(Modifier.padding(14.dp)) { content() }
+        Column(Modifier.padding(15.dp)) { content() }
     }
 }
 

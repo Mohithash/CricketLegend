@@ -41,7 +41,9 @@ class MainActivity : ComponentActivity() {
         Game.init(applicationContext)
         setContent {
             CricketLegendTheme {
-                Root()
+                com.mohithash.cricketlegend.ui.ScreenBackground {
+                    Root()
+                }
             }
         }
     }
@@ -79,14 +81,25 @@ private fun Root() {
     )
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = com.mohithash.cricketlegend.ui.CardNavy,
+                tonalElevation = 0.dp
+            ) {
                 tabs.forEachIndexed { i, tab ->
                     NavigationBarItem(
                         selected = Game.selectedTab == i,
                         onClick = { Game.selectedTab = i },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, fontSize = 11.sp) }
+                        label = { Text(tab.label, fontSize = 11.sp) },
+                        colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                            selectedIconColor = com.mohithash.cricketlegend.ui.DeepNavy,
+                            selectedTextColor = com.mohithash.cricketlegend.ui.GoldAccent,
+                            indicatorColor = com.mohithash.cricketlegend.ui.GoldAccent,
+                            unselectedIconColor = com.mohithash.cricketlegend.ui.TextDim,
+                            unselectedTextColor = com.mohithash.cricketlegend.ui.TextDim
+                        )
                     )
                 }
             }
