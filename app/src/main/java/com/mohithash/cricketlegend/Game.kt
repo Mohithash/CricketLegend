@@ -35,9 +35,15 @@ object Game {
 
     private var saveFile: File? = null
     private var hofFile: File? = null
+    private var frFile: File? = null
     private var hofRecorded = false
     var hallOfFame: List<HofEntry> = emptyList()
         private set
+
+    /** Franchise-manager mode state (independent of the player career). */
+    var franchise: com.mohithash.cricketlegend.model.FranchiseGame? = null
+        private set
+
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     fun init(context: Context) {
@@ -45,8 +51,13 @@ object Game {
         val f = File(context.filesDir, "save.json")
         saveFile = f
         hofFile = File(context.filesDir, "hof.json")
+        frFile = File(context.filesDir, "franchise.json")
         hofFile?.takeIf { it.exists() }?.let { hf ->
             runCatching { hallOfFame = json.decodeFromString<List<HofEntry>>(hf.readText()) }
+        }
+        frFile?.takeIf { it.exists() }?.let { ff ->
+            runCatching { franchise = json.decodeFromString<com.mohithash.cricketlegend.model.FranchiseGame>(ff.readText()) }
+                .onFailure { ff.delete() }
         }
         if (f.exists()) {
             runCatching { state = json.decodeFromString<GameState>(f.readText()) }
@@ -55,6 +66,31 @@ object Game {
         }
         version++
     }
+
+    private fun persistFranchise() {
+        val g = franchise ?: return
+        frFile?.writeText(json.encodeToString(g))
+    }
+
+    private inline fun mutateFr(block: (com.mohithash.cricketlegend.model.FranchiseGame) -> Unit) {
+        val g = franchise ?: return
+        block(g); version++; persistFranchise()
+    }
+
+    fun newFranchiseGame(teamName: String) {
+        franchise = com.mohithash.cricketlegend.engine.FranchiseEngine.newRuinedFranchise(teamName, kotlin.random.Random.Default)
+        version++; persistFranchise()
+    }
+
+    fun abandonFranchise() { franchise = null; frFile?.delete(); version++ }
+
+    fun frSign(index: Int) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.signPlayer(it, index) }
+    fun frRelease(name: String) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.releasePlayer(it, name) }
+    fun frUpgrade(id: String) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.upgrade(it, id) }
+    fun frPayDebt(amount: Long) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.payDebt(it, amount) }
+    fun frStartSeason() = mutateFr { it.phase = "MANAGE" }
+    fun frReopenAuction() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.openAuction(it, kotlin.random.Random.Default) }
+    fun frSimSeason() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.simulateSeason(it, kotlin.random.Random.Default) }
 
     private fun recordHallOfFame(s: GameState) {
         if (hofRecorded) return

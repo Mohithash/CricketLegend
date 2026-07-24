@@ -58,9 +58,34 @@ fun NewGameScreen() {
         Text("From gully cricket to the record books",
             color = TextDim, fontSize = 13.sp,
             modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
 
-        SectionHeader("Your Name")
+        // ── Franchise Manager mode ──
+        SectionHeader("Or: Take Over a Franchise")
+        InfoCard {
+            Text("Rescue a debt-ridden T20 club with a threadbare squad. Win the auction, upgrade the stadium and academy, balance the books and chase a title.",
+                color = TextDim, fontSize = 11.sp)
+            Spacer(Modifier.height(8.dp))
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.height(220.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(RealData.franchises) { f ->
+                    Button(
+                        onClick = { Game.newFranchiseGame(f.name) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = androidx.compose.ui.graphics.Color(f.colorHex)),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)
+                    ) { Text(f.name, color = androidx.compose.ui.graphics.Color.White, fontSize = 10.sp, maxLines = 2) }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        SectionHeader("Player Career — Your Name")
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
