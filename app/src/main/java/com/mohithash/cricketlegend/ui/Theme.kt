@@ -10,35 +10,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// ── "Matchday" light palette — a clean modern sports-app identity ────────
-// (Constant names kept from the old dark theme so every screen restyles at once.)
-val PitchGreen = Color(0xFF0E8A5F)    // primary action — fresh turf green
-val DeepNavy = Color(0xFF101826)      // ink (dark text on accents; deep surfaces)
-val CardNavy = Color(0xFFEDF1F6)      // secondary chip / unselected button (light slate)
-val GoldAccent = Color(0xFFDB8A00)    // trophy amber, darkened for light backgrounds
-val BallRed = Color(0xFFC4453B)
-val TextPrimary = Color(0xFF1A2433)   // ink body text
-val TextDim = Color(0xFF64748B)       // slate secondary text
-val WinGreen = Color(0xFF0B9D61)
-val LossRed = Color(0xFFD64545)
+// ── "Night Turf" — pure-black AMOLED identity with vivid emerald ─────────
+// (Constant names kept so every screen restyles at once.)
+val PitchGreen = Color(0xFF16C47F)    // vivid emerald primary
+val DeepNavy = Color(0xFF0A0D10)      // ink used on bright accents
+val CardNavy = Color(0xFF1D242C)      // secondary chip / unselected button (graphite)
+val GoldAccent = Color(0xFFF5C044)    // trophy gold — reserved for glory moments
+val BallRed = Color(0xFFE2554A)
+val TextPrimary = Color(0xFFEDF2F6)
+val TextDim = Color(0xFF8B97A3)
+val WinGreen = Color(0xFF3DDC84)
+val LossRed = Color(0xFFFF6B6B)
 
 // gradient + structural tokens
-val HeroTop = Color(0xFF0F5E43)       // deep turf hero band
-val HeroBottom = Color(0xFF0A3D2E)
-val GoldDeep = Color(0xFFB36F00)
-val TileBg = Color(0xFFF2F5F9)        // tinted stat tile
-val Violet = Color(0xFF6D5AE6)
-val Teal = Color(0xFF0E7490)          // deep cyan secondary accent
-val CardBorder = Color(0xFFE2E8F0)    // hairline card edge
-val CardSurface = Color(0xFFFFFFFF)   // card paper
-val BgTop = Color(0xFFF5F7FA)         // background gradient top
-val BgBottom = Color(0xFFE8EDF2)      // background gradient bottom
+val HeroTop = Color(0xFF0F4A34)       // emerald-black hero band
+val HeroBottom = Color(0xFF081D14)
+val GoldDeep = Color(0xFFB8862E)
+val TileBg = Color(0xFF161B21)        // graphite stat tile
+val Violet = Color(0xFF9B8CFF)
+val Teal = Color(0xFF2DD4BF)          // mint secondary accent
+val CardBorder = Color(0xFF262D35)    // hairline card edge
+val CardSurface = Color(0xFF12161B)   // graphite card on true black
+val BgTop = Color(0xFF0A0C0E)         // near-black gradient top
+val BgBottom = Color(0xFF040506)      // AMOLED black bottom
 
-private val Scheme = androidx.compose.material3.lightColorScheme(
+private val Scheme = darkColorScheme(
     primary = PitchGreen,
-    onPrimary = Color.White,
+    onPrimary = DeepNavy,
     secondary = Teal,
-    onSecondary = Color.White,
+    onSecondary = DeepNavy,
     background = BgTop,
     onBackground = TextPrimary,
     surface = CardSurface,
