@@ -131,9 +131,11 @@ object Scorecards {
         total: Int, wkts: Int, names: List<String>,
         playerBowl: BowlingLine?, playerName: String, fx: Fixture, rng: Random
     ): List<CardBowl> {
-        val bowlerCount = if (fx.format == Format.T20) 6 else 6
+        val bowlerCount = 6
         val totalBalls = when (fx.format) { Format.T20 -> 120; Format.ODI -> 300; Format.FIRST_CLASS -> 480 }
         val out = ArrayList<CardBowl>()
+        // the player's own spell can exceed the notional team totals — clamp so the
+        // remaining shares never go negative (coerceIn(0, negative) would throw)
         var runsLeft = total
         var wktsLeft = wkts
         var ballsLeft = totalBalls
@@ -143,16 +145,21 @@ object Scorecards {
                 playerBowl.runsConceded, playerBowl.wickets, isPlayer = true))
             runsLeft -= playerBowl.runsConceded; wktsLeft -= playerBowl.wickets; ballsLeft -= playerBowl.balls
         }
+        runsLeft = runsLeft.coerceAtLeast(0)
+        wktsLeft = wktsLeft.coerceAtLeast(0)
+        ballsLeft = ballsLeft.coerceAtLeast(0)
+
         val n = (bowlerCount - out.size).coerceAtLeast(1)
         for (i in 0 until n) {
-            val share = if (i == n - 1) ballsLeft else (ballsLeft / (n - i))
+            val remBowlers = (n - i)
+            val share = if (i == n - 1) ballsLeft else (ballsLeft / remBowlers)
             val balls = share.coerceIn(0, ballsLeft)
-            ballsLeft -= balls
-            val w = if (i == n - 1) wktsLeft.coerceAtLeast(0) else (0..wktsLeft.coerceAtLeast(0)).random(rng).coerceAtMost(3)
-            wktsLeft -= w
-            val runs = if (i == n - 1) runsLeft.coerceAtLeast(0)
-            else (runsLeft * (0.5 + rng.nextDouble() * 0.5) / (n - i)).toInt().coerceIn(0, runsLeft)
-            runsLeft -= runs
+            ballsLeft = (ballsLeft - balls).coerceAtLeast(0)
+            val w = if (i == n - 1) wktsLeft else (0..wktsLeft).random(rng).coerceAtMost(3)
+            wktsLeft = (wktsLeft - w).coerceAtLeast(0)
+            val runs = if (i == n - 1) runsLeft
+            else (runsLeft.toDouble() * (0.5 + rng.nextDouble() * 0.5) / remBowlers).toInt().coerceIn(0, runsLeft)
+            runsLeft = (runsLeft - runs).coerceAtLeast(0)
             val name = names.getOrElse(names.size - 1 - i) { RealData.randomName("India") }
             if (balls > 0) out.add(CardBowl(name, balls, rng.nextInt(2), runs, w))
         }
