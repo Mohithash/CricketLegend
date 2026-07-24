@@ -61,6 +61,39 @@ fun FranchiseScreen(g: FranchiseGame) {
                     Text(g.lastSeasonReport, color = TextDim, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
             }
 
+            // ── your own playing card (player-manager) ──
+            if (g.playAsPlayer) {
+                val me = g.squad.firstOrNull { it.isManager }
+                SectionHeader("Your Playing Career")
+                InfoCard {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text("${me?.rating ?: 50}", color = GoldAccent, fontWeight = FontWeight.Black, fontSize = 26.sp,
+                            modifier = Modifier.width(52.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(g.myName, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                            Text("${roleLabel(g.myRole)} · age ${me?.age ?: 22} · form ${me?.form ?: 55}",
+                                color = TextDim, fontSize = 11.sp)
+                        }
+                    }
+                    if (g.mySeasonLine.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(g.mySeasonLine, color = Teal, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        MiniStat("Runs", "${g.myRuns}")
+                        MiniStat("Avg", "%.1f".format(g.myAvg))
+                        MiniStat("Wkts", "${g.myWkts}")
+                        MiniStat("100s", "${g.my100s}")
+                        MiniStat("HS", "${g.myHighScore}")
+                    }
+                    if (g.runsBySeason.size >= 2) {
+                        Spacer(Modifier.height(6.dp))
+                        LineChart(g.runsBySeason, modifier = Modifier.fillMaxWidth().height(50.dp), color = GoldAccent)
+                    }
+                }
+            }
+
             if (over) {
                 InfoCard {
                     Text(endLabel(g), color = if (g.won) GoldAccent else LossRed,
@@ -226,11 +259,21 @@ private fun PlayerLine(p: SquadPlayer, modifier: Modifier = Modifier) {
         Text("${p.rating}", color = ratingColor(p.rating), fontWeight = FontWeight.Black,
             fontSize = 14.sp, modifier = Modifier.width(30.dp))
         Column(Modifier.weight(1f)) {
-            Text((if (p.overseas) "✈ " else "") + p.name, color = TextPrimary, fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold, maxLines = 1)
-            Text("${roleLabel(p.role)} · age ${p.age} · ${Money.fmt(p.salary, "India")}/yr",
+            Text((if (p.overseas) "✈ " else "") + p.name, color = if (p.isManager) GoldAccent else TextPrimary,
+                fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            val season = if (p.seasonRuns > 0 || p.seasonWkts > 0)
+                " · last: ${p.seasonRuns}r${if (p.seasonWkts > 0) "/${p.seasonWkts}w" else ""}" else ""
+            Text("${roleLabel(p.role)} · age ${p.age} · ${Money.fmt(p.salary, "India")}/yr$season",
                 color = TextDim, fontSize = 9.sp, maxLines = 1)
         }
+    }
+}
+
+@Composable
+private fun MiniStat(label: String, value: String) {
+    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        Text(value, color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
+        Text(label, color = TextDim, fontSize = 9.sp)
     }
 }
 

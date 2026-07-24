@@ -57,6 +57,11 @@ private fun Root() {
     @Suppress("UNUSED_VARIABLE") val v = Game.version
     val state = Game.state
 
+    if (Game.almanacOpen) {
+        com.mohithash.cricketlegend.ui.AlmanacScreen(onClose = { Game.almanacOpen = false })
+        return
+    }
+
     // Franchise-manager mode takes over the screen while active
     Game.franchise?.let { fr ->
         com.mohithash.cricketlegend.ui.FranchiseScreen(fr)

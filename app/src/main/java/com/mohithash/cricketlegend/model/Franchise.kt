@@ -7,10 +7,13 @@ data class SquadPlayer(
     val name: String,
     val role: String,      // BAT, BOWL, AR, WK
     var rating: Int,       // 1..99
-    val age: Int,
+    var age: Int,
     var salary: Long,      // per season
     var form: Int = 55,    // 0..100
-    val overseas: Boolean = false
+    val overseas: Boolean = false,
+    val isManager: Boolean = false,   // YOU — the player-owner
+    var seasonRuns: Int = 0,          // last season's tally (for top-performer panels)
+    var seasonWkts: Int = 0
 )
 
 @Serializable
@@ -47,8 +50,25 @@ data class FranchiseGame(
     var lastSeasonReport: String = "",
     var sacked: Boolean = false,
     var bankrupt: Boolean = false,
-    var won: Boolean = false                // escaped debt + won a title
+    var won: Boolean = false,                // escaped debt + won a title
+    // ── player-manager: you also turn out for the club ──
+    var playAsPlayer: Boolean = true,
+    var myName: String = "You",
+    var myRole: String = "AR",
+    var myRuns: Int = 0,
+    var myWkts: Int = 0,
+    var myMatches: Int = 0,
+    var my100s: Int = 0,
+    var my50s: Int = 0,
+    var myHighScore: Int = 0,
+    var myBestBowlW: Int = 0,
+    var mySeasonLine: String = "",
+    val runsBySeason: MutableList<Int> = mutableListOf()
 ) {
+    val myAvg: Double get() {
+        val dismissals = (myMatches * 0.7).toInt().coerceAtLeast(1)
+        return if (myMatches > 0) myRuns.toDouble() / dismissals else 0.0
+    }
     fun addNews(line: String) {
         news.add(0, "[$year] $line")
         while (news.size > 40) news.removeAt(news.size - 1)

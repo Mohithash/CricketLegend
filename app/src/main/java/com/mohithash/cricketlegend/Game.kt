@@ -29,6 +29,7 @@ object Game {
     var version by mutableIntStateOf(0)
         private set
     var selectedTab by mutableIntStateOf(0)
+    var almanacOpen by androidx.compose.runtime.mutableStateOf(false)
 
     var state: GameState? = null
         private set
@@ -77,8 +78,9 @@ object Game {
         block(g); version++; persistFranchise()
     }
 
-    fun newFranchiseGame(teamName: String) {
-        franchise = com.mohithash.cricketlegend.engine.FranchiseEngine.newRuinedFranchise(teamName, kotlin.random.Random.Default)
+    fun newFranchiseGame(teamName: String, myName: String = "You", myRole: String = "AR", playAsPlayer: Boolean = true) {
+        franchise = com.mohithash.cricketlegend.engine.FranchiseEngine.newRuinedFranchise(
+            teamName, kotlin.random.Random.Default, myName, myRole, playAsPlayer)
         version++; persistFranchise()
     }
 

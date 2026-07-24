@@ -512,6 +512,7 @@ data class GameState(
     val allocations: MutableMap<String, Long> = mutableMapOf(),  // weekly ₹ spend per category
     var nickname: String = "",
     val leagueHistory: MutableList<String> = mutableListOf(),   // "2027: Mumbai Mavericks (you: 3rd, 520 runs)"
+    val worldLog: MutableList<String> = mutableListOf(),        // last season's world results
     var derbyRival: String? = null,
     var series: SeriesState? = null,
     val seasonObjectives: MutableList<Objective> = mutableListOf(),

@@ -32,6 +32,10 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        // the historical almanac ships uncompressed for fast random access
+        noCompress.add("alm")
+    }
 }
 
 dependencies {

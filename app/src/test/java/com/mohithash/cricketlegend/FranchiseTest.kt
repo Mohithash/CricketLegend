@@ -51,6 +51,22 @@ class FranchiseTest {
     }
 
     @Test
+    fun playerManagerAccruesPersonalStats() {
+        val rng = Random(3)
+        val g = FranchiseEngine.newRuinedFranchise("Delhi Dynamos", rng, "Test Star", "AR", true)
+        assertTrue("manager is in the squad", g.squad.any { it.isManager })
+        // can't release yourself
+        val me = g.squad.first { it.isManager }
+        FranchiseEngine.releasePlayer(g, me.name)
+        assertTrue("manager not releasable", g.squad.any { it.isManager })
+        repeat(6) { FranchiseEngine.simulateSeason(g, rng) }
+        assertTrue("accrued matches", g.myMatches > 0)
+        assertTrue("accrued runs", g.myRuns > 0)
+        assertTrue("season line set", g.mySeasonLine.isNotEmpty())
+        assertTrue("rating developed from 52", g.squad.first { it.isManager }.rating >= 52)
+    }
+
+    @Test
     fun goodManagementCanEscapeDebt() {
         // a competent manager (always signs the best, upgrades marketing/stadium, pays debt)
         val rng = Random(11)

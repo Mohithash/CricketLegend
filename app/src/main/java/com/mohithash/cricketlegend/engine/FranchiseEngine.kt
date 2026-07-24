@@ -37,14 +37,20 @@ object FranchiseEngine {
     }
 
     /** Creates the takeover scenario: a broke club, weak squad, a demanding board. */
-    fun newRuinedFranchise(teamName: String, rng: Random): FranchiseGame {
+    fun newRuinedFranchise(teamName: String, rng: Random,
+                           myName: String = "You", myRole: String = "AR", playAsPlayer: Boolean = true): FranchiseGame {
         val fr = RealData.franchise(teamName) ?: RealData.franchises.random(rng)
         val g = FranchiseGame(
             teamName = fr.name, city = fr.city, colorHex = fr.colorHex,
-            cash = -50 * CR, debt = 150 * CR, fanHappiness = 32.0, boardConfidence = 45.0
+            cash = -50 * CR, debt = 150 * CR, fanHappiness = 32.0, boardConfidence = 45.0,
+            playAsPlayer = playAsPlayer, myName = myName.ifBlank { "You" }, myRole = myRole
         )
+        // YOU — the player-owner, a raw prospect who'll develop with the club
+        if (playAsPlayer) {
+            g.squad.add(SquadPlayer("★ ${g.myName}", myRole, 52, 22, 5_000_000, 55, false, isManager = true))
+        }
         // a threadbare squad of journeymen and kids
-        repeat(13) { g.squad.add(genPlayer(rng, 38, 58, overseas = it >= 11)) }
+        repeat(if (playAsPlayer) 12 else 13) { g.squad.add(genPlayer(rng, 38, 58, overseas = it >= 11)) }
         g.boardTarget = "Survive: avoid finishing last and don't go bankrupt."
         g.addNews("TAKEOVER: You inherit ${fr.name} — ${Money.fmt(g.debt, "India")} in debt and a bottom-of-the-table squad.")
         g.addNews("The board gives you a season to show progress. Fans are furious.")
@@ -82,6 +88,7 @@ object FranchiseEngine {
 
     fun releasePlayer(g: FranchiseGame, name: String): String {
         val p = g.squad.firstOrNull { it.name == name } ?: return "Not in squad."
+        if (p.isManager) return "You can't release yourself!"
         if (g.squad.size <= 11) return "Can't go below 11 players."
         g.squad.remove(p)
         // recoup a little of the salary as a transfer fee
@@ -164,6 +171,41 @@ object FranchiseEngine {
         }
         if (pos < g.bestFinish) g.bestFinish = pos
         if (wonTitle) g.titles++
+
+        // ---- individual player performances (best XI plays the most) ----
+        val xi = g.squad.sortedByDescending { it.rating }.take(11).toSet()
+        for (p in g.squad) {
+            val gamesPlayed = if (p in xi) 12 + rng.nextInt(3) else rng.nextInt(6)
+            val formF = 0.6 + p.form / 100.0
+            val bats = p.role == "BAT" || p.role == "WK" || p.role == "AR"
+            val bowls = p.role == "BOWL" || p.role == "AR"
+            p.seasonRuns = if (bats) (gamesPlayed * (p.rating * 0.42) * formF * (0.7 + rng.nextDouble() * 0.6)).toInt() else
+                (gamesPlayed * 6 * rng.nextDouble()).toInt()
+            p.seasonWkts = if (bowls) (gamesPlayed * (p.rating / 55.0) * formF * (0.6 + rng.nextDouble() * 0.8)).toInt() else 0
+
+            if (p.isManager) {
+                g.myMatches += gamesPlayed
+                g.myRuns += p.seasonRuns
+                g.myWkts += p.seasonWkts
+                // seasonal milestones from the aggregate (approximate innings breakdown)
+                val hundreds = if (p.seasonRuns > 500 && bats) rng.nextInt(2) else 0
+                val fifties = if (bats) (p.seasonRuns / 160).coerceAtMost(6) else 0
+                g.my100s += hundreds; g.my50s += fifties
+                val hs = (p.seasonRuns / gamesPlayed.coerceAtLeast(1) * (1.6 + rng.nextDouble())).toInt()
+                if (hs > g.myHighScore) g.myHighScore = hs
+                if (p.seasonWkts > g.myBestBowlW) g.myBestBowlW = (p.seasonWkts / 3).coerceAtMost(6)
+                g.runsBySeason.add(p.seasonRuns)
+                while (g.runsBySeason.size > 30) g.runsBySeason.removeAt(0)
+                g.mySeasonLine = "You: ${p.seasonRuns} runs" +
+                    (if (p.seasonWkts > 0) ", ${p.seasonWkts} wkts" else "") +
+                    " in $gamesPlayed games (rating ${p.rating})"
+            }
+        }
+        // team-mate awards
+        val topBat = g.squad.maxByOrNull { it.seasonRuns }
+        val topBowl = g.squad.filter { it.seasonWkts > 0 }.maxByOrNull { it.seasonWkts }
+        if (topBat != null) g.addNews("Top scorer: ${topBat.name} — ${topBat.seasonRuns} runs.")
+        if (topBowl != null) g.addNews("Top wicket-taker: ${topBowl.name} — ${topBowl.seasonWkts} wickets.")
 
         // ---- finances ----
         val homeGames = 7

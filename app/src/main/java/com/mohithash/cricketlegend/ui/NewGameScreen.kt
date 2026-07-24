@@ -44,6 +44,7 @@ fun NewGameScreen() {
     var statTier by remember { mutableStateOf("Talented") }
     var formatFocus by remember { mutableStateOf("All") }
     var difficulty by remember { mutableStateOf("Realistic") }
+    var frRole by remember { mutableStateOf("AR") }
 
     Column(
         Modifier
@@ -60,12 +61,25 @@ fun NewGameScreen() {
             modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Spacer(Modifier.height(20.dp))
 
-        // ── Franchise Manager mode ──
-        SectionHeader("Or: Take Over a Franchise")
+        // ── Player-Manager (Franchise) mode ──
+        SectionHeader("Or: Player-Manager of a Franchise")
         InfoCard {
-            Text("Rescue a debt-ridden T20 club with a threadbare squad. Win the auction, upgrade the stadium and academy, balance the books and chase a title.",
+            Text("Rescue a debt-ridden T20 club — and play in your own team. Run the auction, upgrade facilities, balance the books, develop your own game and chase a title.",
                 color = TextDim, fontSize = 11.sp)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
+            Text("Your on-field role:", color = TextDim, fontSize = 11.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("BAT" to "Batter", "BOWL" to "Bowler", "AR" to "All-rounder", "WK" to "Keeper").forEach { (r, lbl) ->
+                    Button(
+                        onClick = { frRole = r },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (frRole == r) PitchGreen else CardNavy),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp)
+                    ) { Text(lbl, color = TextPrimary, fontSize = 9.sp, maxLines = 1) }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text("Pick a club to take over (your name from the field below, or random):", color = TextDim, fontSize = 10.sp)
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.height(220.dp),
@@ -74,7 +88,7 @@ fun NewGameScreen() {
             ) {
                 items(RealData.franchises) { f ->
                     Button(
-                        onClick = { Game.newFranchiseGame(f.name) },
+                        onClick = { Game.newFranchiseGame(f.name, name.trim(), frRole, true) },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = androidx.compose.ui.graphics.Color(f.colorHex)),
                         shape = RoundedCornerShape(10.dp),

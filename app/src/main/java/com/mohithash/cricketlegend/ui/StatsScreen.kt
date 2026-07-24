@@ -267,6 +267,22 @@ private fun WorldTab(s: GameState) {
                 color = TextDim, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
         }
     }
+    androidx.compose.material3.Button(
+        onClick = { com.mohithash.cricketlegend.Game.almanacOpen = true },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = CardNavy)
+    ) { Text("📚 Open the 100-Year Historical Almanac", color = GoldAccent, fontSize = 12.sp) }
+
+    if (s.worldLog.isNotEmpty()) {
+        SectionHeader("World Season Review — squads decide results")
+        InfoCard {
+            s.worldLog.take(16).forEach {
+                Text("• $it", color = if (it.contains("World Cup")) GoldAccent else TextPrimary,
+                    fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
+            }
+        }
+    }
+
     SectionHeader("Rival Watch — Your Generation")
     InfoCard {
         val top = s.rivals.filter { !it.retired }

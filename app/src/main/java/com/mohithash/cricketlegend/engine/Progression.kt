@@ -369,6 +369,7 @@ object Progression {
         Series.evaluateObjectives(s)
         s.series = null
         WorldSim.advanceSeason(s, rng)
+        WorldFixtures.simulateWorldSeason(s, rng)
         awardsNight(s, avgRating)
         updateSelection(s, avgRating, rng)
         updateContract(s, avgRating)
