@@ -12,8 +12,20 @@ data class SquadPlayer(
     var form: Int = 55,    // 0..100
     val overseas: Boolean = false,
     val isManager: Boolean = false,   // YOU — the player-owner
-    var seasonRuns: Int = 0,          // last season's tally (for top-performer panels)
-    var seasonWkts: Int = 0
+    var seasonRuns: Int = 0,          // current-season tally (accrued match by match)
+    var seasonWkts: Int = 0,
+    var careerRuns: Int = 0,          // accrued from every simulated match, forever
+    var careerWkts: Int = 0,
+    var careerMatches: Int = 0
+)
+
+@Serializable
+data class FrFixture(
+    val opponent: String,
+    val stage: String = "LEAGUE",     // LEAGUE, SEMI, FINAL
+    var played: Boolean = false,
+    var won: Boolean = false,
+    var summary: String = ""
 )
 
 @Serializable
@@ -45,7 +57,12 @@ data class FranchiseGame(
     var purse: Long = 0,                    // auction budget for the current window
     val standings: MutableMap<String, Int> = mutableMapOf(),
     val news: MutableList<String> = mutableListOf(),
-    var phase: String = "AUCTION",          // AUCTION -> MANAGE -> (sim season) -> REVIEW
+    var phase: String = "AUCTION",          // AUCTION -> SEASON (match-by-match) -> back to AUCTION
+    // ── unified living world: every rival club has a persistent, evolving squad ──
+    val rivalSquads: MutableMap<String, MutableList<SquadPlayer>> = mutableMapOf(),
+    val fixtures: MutableList<FrFixture> = mutableListOf(),
+    var lastScorecard: FullScorecard? = null,
+    var lastMatchTitle: String = "",
     var boardTarget: String = "",
     var lastSeasonReport: String = "",
     var sacked: Boolean = false,

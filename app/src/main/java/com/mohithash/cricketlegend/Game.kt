@@ -90,8 +90,8 @@ object Game {
     fun frRelease(name: String) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.releasePlayer(it, name) }
     fun frUpgrade(id: String) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.upgrade(it, id) }
     fun frPayDebt(amount: Long) = mutateFr { toast = com.mohithash.cricketlegend.engine.FranchiseEngine.payDebt(it, amount) }
-    fun frStartSeason() = mutateFr { it.phase = "MANAGE" }
-    fun frReopenAuction() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.openAuction(it, kotlin.random.Random.Default) }
+    fun frStartSeason() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.startSeason(it, kotlin.random.Random.Default) }
+    fun frPlayMatch() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.playNextFixture(it, kotlin.random.Random.Default) }
     fun frSimSeason() = mutateFr { com.mohithash.cricketlegend.engine.FranchiseEngine.simulateSeason(it, kotlin.random.Random.Default) }
 
     private fun recordHallOfFame(s: GameState) {

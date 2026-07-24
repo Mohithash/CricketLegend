@@ -17,6 +17,29 @@ class FranchiseTest {
         assertTrue("weak starting squad", g.squadStrength() < 65)
         assertTrue("auction pool filled", g.auctionPool.isNotEmpty())
         assertTrue("has a board target", g.boardTarget.isNotEmpty())
+        assertTrue("all 9 rivals have real squads", g.rivalSquads.size == 9 &&
+            g.rivalSquads.values.all { it.size >= 15 })
+    }
+
+    @Test
+    fun matchByMatchSeasonAccruesRealStats() {
+        val rng = Random(9)
+        val g = FranchiseEngine.newRuinedFranchise("Chennai Emperors", rng, "Skipper", "BAT", true)
+        FranchiseEngine.startSeason(g, rng)
+        assertTrue("14 fixtures", g.fixtures.size == 14)
+        // play one match: scorecard + accrual + standings move
+        assertTrue(FranchiseEngine.playNextFixture(g, rng))
+        val card = g.lastScorecard!!
+        assertTrue("plausible batters per innings", card.first.batting.size in 1..11 && card.second.batting.size in 1..11)
+        val totalRuns = (g.squad + g.rivalSquads.values.flatten()).sumOf { it.seasonRuns }
+        assertTrue("league-wide runs accrued from real sims", totalRuns > 0)
+        assertTrue("standings updated", g.standings.values.sum() >= 4)
+        // finish the season; manager career should accrue and world evolve
+        FranchiseEngine.simulateSeason(g, rng)
+        assertTrue("season completed back to auction", g.phase == "AUCTION")
+        assertTrue("manager career accrued", g.myMatches > 0)
+        assertTrue("rival squads evolved (aged)", g.rivalSquads.values.flatten().any { it.age >= 19 })
+        assertTrue("cap-race leaders exist", FranchiseEngine.leagueTopBats(g, 3).first().seasonRuns >= 0)
     }
 
     @Test
@@ -73,9 +96,15 @@ class FranchiseTest {
         val g = FranchiseEngine.newRuinedFranchise("Mumbai Mavericks", rng)
         var escaped = false
         repeat(25) {
-            // buy best affordable
-            g.auctionPool.sortedByDescending { it.rating }.forEach {
-                FranchiseEngine.signPlayer(g, g.auctionPool.indexOf(it))
+            // shrewd strategy: invest in stars early, then run a lean wage bill
+            if (g.seasonsRun < 3) {
+                g.auctionPool.sortedByDescending { it.rating }.take(3).forEach {
+                    FranchiseEngine.signPlayer(g, g.auctionPool.indexOf(it))
+                }
+            }
+            while (g.squad.size > 15) {
+                val weakest = g.squad.filter { !it.isManager }.minByOrNull { it.rating } ?: break
+                FranchiseEngine.releasePlayer(g, weakest.name)
             }
             FranchiseEngine.upgrade(g, "marketing")
             FranchiseEngine.upgrade(g, "stadium")

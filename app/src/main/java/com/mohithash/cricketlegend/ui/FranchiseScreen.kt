@@ -109,7 +109,7 @@ fun FranchiseScreen(g: FranchiseGame) {
 
             when (g.phase) {
                 "AUCTION" -> AuctionPhase(g)
-                else -> ManagePhase(g)
+                else -> SeasonPhase(g)
             }
 
             SectionHeader("Facilities")
@@ -179,44 +179,51 @@ private fun AuctionPhase(g: FranchiseGame) {
         modifier = Modifier.fillMaxWidth().height(48.dp),
         colors = ButtonDefaults.buttonColors(containerColor = PitchGreen),
         enabled = g.squad.size >= 11
-    ) { Text("LOCK SQUAD & MANAGE ▶", fontWeight = FontWeight.Black, color = TextPrimary) }
+    ) { Text("LOCK SQUAD & START SEASON ▶", fontWeight = FontWeight.Black, color = TextPrimary) }
 
     SquadList(g, releasable = true)
 }
 
 @Composable
-private fun ManagePhase(g: FranchiseGame) {
-    SectionHeader("Pre-Season")
-    InfoCard {
-        Text("Invest in facilities and repay debt, then simulate the campaign.", color = TextDim, fontSize = 11.sp)
-        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(10L, 40L, 100L).forEach { cr ->
-                val amt = cr * 10_000_000L
-                OutlinedButton(
-                    onClick = { Game.frPayDebt(amt) },
-                    enabled = g.cash > 0 && g.debt > 0,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp)
-                ) { Text("Repay ₹${cr}Cr", fontSize = 10.sp, color = GoldAccent) }
+private fun SeasonPhase(g: FranchiseGame) {
+    val next = g.fixtures.firstOrNull { !it.played }
+    val played = g.fixtures.count { it.played }
+
+    if (next != null) {
+        SectionHeader("Next Match — game ${played + 1}")
+        InfoCard {
+            val oppStr = g.rivalSquads[next.opponent]?.let { sq ->
+                sq.sortedByDescending { it.rating }.take(11).sumOf { it.rating } / 11
+            } ?: 55
+            Text("${if (next.stage == "LEAGUE") "League" else next.stage}: ${g.teamName} v ${next.opponent}",
+                color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 15.sp)
+            Text("Their XI strength: $oppStr · yours: ${g.squadStrength()}", color = TextDim, fontSize = 11.sp)
+            g.rivalSquads[next.opponent]?.maxByOrNull { it.seasonRuns }?.let {
+                if (it.seasonRuns > 0) Text("Danger: ${it.name} — ${it.seasonRuns} runs this season",
+                    color = LossRed, fontSize = 11.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = { Game.frPlayMatch() },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PitchGreen)
+            ) { Text("▶ PLAY MATCH", fontWeight = FontWeight.Black, color = TextPrimary, fontSize = 16.sp) }
+            Spacer(Modifier.height(4.dp))
+            OutlinedButton(onClick = { Game.frSimSeason() }, modifier = Modifier.fillMaxWidth()) {
+                Text("⏩ Sim rest of season", color = GoldAccent, fontSize = 12.sp)
             }
         }
     }
-    Spacer(Modifier.height(6.dp))
-    Button(
-        onClick = { Game.frReopenAuction() },
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(containerColor = CardNavy)
-    ) { Text("↩ Back to Auction", color = GoldAccent, fontSize = 12.sp) }
-    Spacer(Modifier.height(4.dp))
-    Button(
-        onClick = { Game.frSimSeason() },
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = GoldAccent)
-    ) { Text("▶ SIMULATE SEASON", fontWeight = FontWeight.Black, color = DeepNavy, fontSize = 16.sp) }
+
+    g.lastScorecard?.let { card ->
+        SectionHeader("Last Match")
+        InfoCard { Text(g.lastMatchTitle, color = GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+        FrInningsView(card.first)
+        FrInningsView(card.second)
+    }
 
     if (g.standings.isNotEmpty()) {
-        SectionHeader("Last Table")
+        SectionHeader("League Table")
         InfoCard {
             g.standings.entries.sortedByDescending { it.value }.forEachIndexed { i, (team, w) ->
                 val mine = team == g.teamName
@@ -230,7 +237,57 @@ private fun ManagePhase(g: FranchiseGame) {
         }
     }
 
+    SectionHeader("Orange & Purple Cap — live, real accrual")
+    InfoCard {
+        Text("Most runs", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        FranchiseEngine.leagueTopBats(g, 5).forEach {
+            KeyValueRow((if (it.isManager) "★ " else "") + it.name, "${it.seasonRuns}",
+                if (it.isManager) GoldAccent else TextPrimary)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text("Most wickets", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        FranchiseEngine.leagueTopBowls(g, 5).forEach {
+            KeyValueRow((if (it.isManager) "★ " else "") + it.name, "${it.seasonWkts}",
+                if (it.isManager) GoldAccent else TextPrimary)
+        }
+    }
+
+    InfoCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(10L, 40L, 100L).forEach { cr ->
+                val amt = cr * 10_000_000L
+                OutlinedButton(
+                    onClick = { Game.frPayDebt(amt) },
+                    enabled = g.cash > 0 && g.debt > 0,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(2.dp)
+                ) { Text("Repay ₹${cr}Cr", fontSize = 10.sp, color = GoldAccent) }
+            }
+        }
+    }
+
     SquadList(g, releasable = true)
+}
+
+@Composable
+private fun FrInningsView(inns: com.mohithash.cricketlegend.model.InningsCard) {
+    InfoCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(inns.teamName, color = GoldAccent, fontWeight = FontWeight.Black, fontSize = 13.sp)
+            Text("${inns.total}/${inns.wickets}", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+        inns.batting.forEach { b ->
+            Row(Modifier.fillMaxWidth()) {
+                Text(b.name, color = if (b.isPlayer) GoldAccent else TextPrimary, fontSize = 10.sp,
+                    fontWeight = if (b.isPlayer) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1, modifier = Modifier.weight(1f))
+                Text("${b.runs}${if (!b.out) "*" else ""} (${b.balls})", color = TextDim, fontSize = 10.sp)
+            }
+        }
+        Text("Bowling: " + inns.bowling.filter { it.wickets > 0 }.joinToString("; ") {
+            "${it.name} ${it.wickets}/${it.runs}"
+        }.ifEmpty { "no wickets fell to bowlers" }, color = TextDim, fontSize = 9.sp)
+    }
 }
 
 @Composable
