@@ -489,9 +489,12 @@ object Progression {
         val bar = Difficulty.selectionBar(s)   // harder difficulty raises the whole ladder
         // international cricket has a minimum age (17), however famous the teenager is
         if (s.age < 17) { s.fame = s.fame.coerceIn(0.0, 100.0); return }
+        // selection is a contest against real, named players from your country's pool
+        fun displaced(): String = s.rivals.filter { !it.retired && it.country == s.country }
+            .minByOrNull { it.skill }?.name ?: "a fringe player"
         if (!s.inNationalT20 && "T20I" !in s.retiredFormats && s.fame >= 20 + bar && bestSkill >= 63 + bar) {
             s.inNationalT20 = true
-            s.addNews("MAIDEN CALL-UP! Selected for ${s.country}'s T20I squad!")
+            s.addNews("MAIDEN CALL-UP! You edge out ${displaced()} for ${s.country}'s T20I squad!")
             s.fame += 5
         }
         if (s.formatFocus != "T20Only" &&
@@ -506,12 +509,14 @@ object Progression {
             s.addNews("The ultimate honour — Test cap incoming for ${s.playerName}!")
             s.fame += 5
         }
-        // poor seasons can cost your spot
+        // poor seasons can cost your spot — to a named, in-form rival
         if (avgRating < 4.2 && rng.nextDouble() < 0.5) {
+            val usurper = s.rivals.filter { !it.retired && it.country == s.country && it.age <= 30 }
+                .maxByOrNull { it.skill }?.name ?: "a hungry youngster"
             when {
-                s.inNationalTest -> { s.inNationalTest = false; s.addNews("Dropped from the Test side after a lean run.") }
-                s.inNationalODI -> { s.inNationalODI = false; s.addNews("Dropped from the ODI squad.") }
-                s.inNationalT20 -> { s.inNationalT20 = false; s.addNews("Left out of the T20I setup.") }
+                s.inNationalTest -> { s.inNationalTest = false; s.addNews("DROPPED from the Test side — $usurper takes your place.") }
+                s.inNationalODI -> { s.inNationalODI = false; s.addNews("Dropped from the ODI squad for $usurper.") }
+                s.inNationalT20 -> { s.inNationalT20 = false; s.addNews("Left out of the T20I setup — $usurper is preferred.") }
             }
         }
         s.fame = s.fame.coerceIn(0.0, 100.0)
